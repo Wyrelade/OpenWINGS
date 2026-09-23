@@ -21,7 +21,9 @@ Header page ("WHDR"): char magic[4]="WHDR"; u32 zero; i32 g_gravity; f32 g_air_d
 Record (512 B): char magic[4]="WREC"; u32 frame_counter; u8 player0[0x128];
   u8 keytable_frame[128] (0x5E4D4..); padding
 
-usage: make_trace_exe.py <src WINGS.EXE> <dst WINGS.EXE>
+usage: make_trace_exe.py <src WINGS.EXE> <dst WINGS.EXE> [--teleport X Y]
+  --teleport: at the end of frame 1 move player 0 to pixel (X,Y) with zero sub-pixel and
+  velocity, so scripted flights start in open air (trace frame 1 = pre-teleport state).
 """
 import struct
 import sys
@@ -45,7 +47,7 @@ def va2off(va):
     return va - 0x10A8 + STUB + 0xA8
 
 
-def build(data_base):
+def build(data_base, teleport=None):
     rbuf, wptr, sbuf, slen = data_base, data_base + 4, data_base + 8, data_base + 12
     s_script, s_rb = data_base + 16, data_base + 27
     L = LIBC
@@ -56,6 +58,16 @@ def build(data_base):
         mov ecx, {n:#x}
         rep movsb"""
 
+    tele = ''
+    if teleport:
+        tx, ty = teleport
+        tele = f"""
+        mov dword ptr [{PLAYERS:#x}], {tx}
+        mov dword ptr [{PLAYERS + 4:#x}], {ty}
+        mov dword ptr [{PLAYERS + 8:#x}], 0
+        mov dword ptr [{PLAYERS + 12:#x}], 0
+        mov dword ptr [{PLAYERS + 16:#x}], 0
+        mov dword ptr [{PLAYERS + 20:#x}], 0"""
     asm = f"""
         pushad
         cld
@@ -106,6 +118,7 @@ def build(data_base):
         mov edi, dword ptr [{rbuf:#x}]
         add edi, 0x1000
         mov dword ptr [{wptr:#x}], edi
+        {tele}
     have:
         mov edi, dword ptr [{wptr:#x}]
         mov eax, dword ptr [{rbuf:#x}]
@@ -149,10 +162,14 @@ def build(data_base):
 
 def main():
     src, dst = sys.argv[1], sys.argv[2]
+    teleport = None
+    if '--teleport' in sys.argv:
+        i = sys.argv.index('--teleport')
+        teleport = (int(sys.argv[i + 1]), int(sys.argv[i + 2]))
     d = bytearray(open(src, 'rb').read())
-    code = build(CAVE + 0x200)
+    code = build(CAVE + 0x200, teleport)
     data_base = (CAVE + len(code) + 3) & ~3
-    code = build(data_base)
+    code = build(data_base, teleport)
     assert (CAVE + len(code) + 3) & ~3 == data_base
     data = struct.pack('<IIII', 0, 0, 0, 0) + b'SCRIPT.BIN\0' + b'rb\0' + b'WHOOKv2'
     blob = code + b'\0' * (data_base - CAVE - len(code)) + data

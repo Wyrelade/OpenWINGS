@@ -578,3 +578,12 @@ Then RE-2: terrain collision/landing (`player_terrain_collide` 0x37D94, single-p
 | 0x769F0 / 0x769F4 | `tick_flag` / `tick_count` | disasm [C] |
 | 0x9D744 | frame counter | disasm [H] |
 | 0x9D760 | framerate option (PIT Hz) | disasm [C] |
+
+### RE-1 session 2 notes (2026-09-24, stopped at user request)
+- `tools/ship_model.py`: exact reference model of the air-only ship tick (x87 64-bit-mantissa rounding via rationals). `tools/model_vs_trace.py` replays traces with recorded keys.
+- **[C] free-fall physics**: model matches the original tick-for-tick for 95 ticks (spawn fall) and 126 ticks (teleported no-input fall, events off) until ground contact. Gravity + drag + integration + sub-pixel semantics confirmed by trace.
+- Harness: `--teleport 284 227` (centre of LEGO's largest open 90x90 box), `tools/make_scripts.py` builds noinput/thrust/rotate/mixed scripts (model keeps them airborne 900–1200 ticks), `re/harness/capture.sh` retries when the wrong level loads.
+- ~~0x9AE00 level-size anomaly~~ resolved: those runs loaded **RINTAMA (800x150)** instead of LEGO; the globals are correct. Level choice is not always the LEVELS.DAT entry [?].
+- **Blocker for thrust/rotate/mixed traces**: in 1-player games the ship takes damage + an impulse within ~20–50 ticks even with rain/snow/bombing/civilians set to 0 in the work-copy LEGO.LEV. Suspect 1-player mission hazards. Next try: 2-player game (PLAYERS.DAT n=2, player 2 idle). Current `lego_thrust`/`lego_rotate` traces were captured with events ON and are only valid up to frames 31/47; `lego_mixed` is valid to frame 19.
+- capture.sh bug fixed (stale output file was reported as ok).
+- Next: 2-player captures → implement `recon/core/ship.c` from ship_model.py → C diff test.
