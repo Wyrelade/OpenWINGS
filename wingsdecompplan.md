@@ -521,7 +521,7 @@ Steps:
 
 Acceptance: `ship_step()` reproduces the original's position/velocity/angle for ≥ 500 consecutive ticks (10 s) across the three input scripts, with any float tolerance explicitly justified.
 
-### RE-1 status (2026-09-23, paused at user request)
+### RE-1 status (2026-09-23)
 Done: git repo (published as **OpenWINGS**); Ghidra 12.1.4 + JDK 21 + DOSBox-X (MSVC and MinGW32) installed portably in `D:\programs\re`; COFF import + `ApplySymbols.java`/`ExportAll.java`; runtime labelled (290 names); ship update located (inlined in `match_main`); `player_t`/`ship_type_t` recovered (`re/types.h`); gravity/drag/Options constants; input path; RNG seeding; 157×90 viewport and 50 Hz fixed step confirmed; trace harness working; first trace `re/traces/lego_noinput_dosbox_mingw32.json` (684 ticks, gravity-only fall, first ticks hand-checked).
 
 Next steps to finish RE-1:
@@ -579,7 +579,7 @@ Then RE-2: terrain collision/landing (`player_terrain_collide` 0x37D94, single-p
 | 0x9D744 | frame counter | disasm [H] |
 | 0x9D760 | framerate option (PIT Hz) | disasm [C] |
 
-### RE-1 session 2 notes (2026-09-24, stopped at user request)
+### RE-1 session 2 notes (2026-09-24)
 - `tools/ship_model.py`: exact reference model of the air-only ship tick (x87 64-bit-mantissa rounding via rationals). `tools/model_vs_trace.py` replays traces with recorded keys.
 - **[C] free-fall physics**: model matches the original tick-for-tick for 95 ticks (spawn fall) and 126 ticks (teleported no-input fall, events off) until ground contact. Gravity + drag + integration + sub-pixel semantics confirmed by trace.
 - Harness: `--teleport 284 227` (centre of LEGO's largest open 90x90 box), `tools/make_scripts.py` builds noinput/thrust/rotate/mixed scripts (model keeps them airborne 900–1200 ticks), `re/harness/capture.sh` retries when the wrong level loads.
