@@ -1,0 +1,21 @@
+"""Python mirror of player_t (re/types.h) for trace decoding. (name, offset, struct fmt)."""
+PLAYER_FIELDS = [
+    ('x', 0x00, 'i'), ('y', 0x04, 'i'), ('xsub', 0x08, 'i'), ('ysub', 0x0C, 'i'),
+    ('vx', 0x10, 'i'), ('vy', 0x14, 'i'), ('ship_type', 0x18, 'i'), ('u_1c', 0x1C, 'i'),
+    ('team', 0x20, 'i'), ('angle_deg', 0x24, 'i'), ('angle10', 0x28, 'i'),
+    ('hp_max', 0x2C, 'i'), ('hp', 0x30, 'i'), ('u_34', 0x34, 'i'), ('weapon2', 0x38, 'i'),
+    ('weapon2_start', 0x3C, 'i'), ('fire_ready', 0x78, 'i'), ('turn_released', 0x7C, 'i'),
+    ('flash_color', 0x80, 'B'), ('flash_color_restore', 0x81, 'B'), ('flash_timer', 0x84, 'i'),
+    ('key_thrust', 0x90, 'i'), ('key_fire2', 0x94, 'i'), ('key_left', 0x98, 'i'),
+    ('key_right', 0x9C, 'i'), ('key_fire1', 0xA0, 'i'), ('base_repair_ctr', 0xA4, 'i'),
+    ('on_own_base', 0xA8, 'B'), ('on_any_base', 0xA9, 'B'), ('material', 0xAC, 'i'),
+    ('exhaust_toggle', 0xB0, 'B'), ('weapon_cycle_dir', 0xC4, 'b'), ('autofire_ctr', 0xC5, 'B'),
+    ('carried', 0xC6, 'B'), ('u_c8', 0xC8, 'i'), ('u_cc', 0xCC, 'i'), ('u_d0', 0xD0, 'i'),
+    ('push_timer', 0xD4, 'i'), ('push_vx', 0xD8, 'i'), ('push_vy', 0xDC, 'i'),
+    ('u_e0', 0xE0, 'i'), ('u_e4', 0xE4, 'i'),
+    ('strength_pct', 0xE8, 'i'), ('mass', 0xEC, 'f'), ('turn_rate', 0xF0, 'i'),
+    ('thrust', 0xF4, 'f'), ('max_speed', 0xF8, 'i'), ('p5_rate', 0xFC, 'i'), ('p5_acc', 0x100, 'i'),
+    ('score', 0x104, 'i'), ('u_108', 0x108, 'i'), ('confuse_timer', 0x10C, 'i'),
+    ('confuse_kind', 0x110, 'i'), ('damage_acc', 0x114, 'i'), ('last_attacker', 0x118, 'i'),
+    ('attacker_age', 0x11C, 'i'), ('u_120', 0x120, 'i'), ('u_124', 0x124, 'i'),
+]

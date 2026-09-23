@@ -1,0 +1,807 @@
+lib objects matched ambiguous
+libemu.a 2 2 0
+libm.a 160 0 0
+libc.a 638 160 17
+crt0.o 1 1 0
+MATCH crt0.o:crt0.o @ 0x10a8 size=0x4a8
+MISS  libc.a:assert.o hits=0
+MISS  libc.a:isalnum.o hits=0
+MISS  libc.a:isalpha.o hits=0
+MISS  libc.a:isascii.o hits=0
+MISS  libc.a:iscntrl.o hits=0
+MISS  libc.a:isdigit.o hits=0
+MISS  libc.a:isgraph.o hits=0
+MISS  libc.a:islower.o hits=0
+MISS  libc.a:isprint.o hits=0
+MISS  libc.a:ispunct.o hits=0
+MISS  libc.a:isspace.o hits=0
+MISS  libc.a:isupper.o hits=0
+MISS  libc.a:isxdigit.o hits=0
+MISS  libc.a:toascii.o hits=0
+MISS  libc.a:tolower.o hits=0
+MISS  libc.a:toupper.o hits=0
+SKIP  libc.a:lconv.o (only 8 fixed bytes)
+MISS  libc.a:mblen.o hits=0
+MISS  libc.a:mbstowcs.o hits=0
+MISS  libc.a:mbtowc.o hits=0
+MISS  libc.a:setlocal.o hits=0
+MISS  libc.a:wcstombs.o hits=0
+MISS  libc.a:wctomb.o hits=0
+MISS  libc.a:acos.o hits=0
+MISS  libc.a:acosh.o hits=0
+MISS  libc.a:asin.o hits=0
+MISS  libc.a:asinh.o hits=0
+MATCH libc.a:atan.o @ 0x4a68c size=0xc
+MISS  libc.a:atan2.o hits=0
+MISS  libc.a:atanh.o hits=0
+MISS  libc.a:ceil.o hits=0
+MATCH libc.a:cos.o @ 0x4ba84 size=0x1c
+MISS  libc.a:cosh.o hits=0
+MISS  libc.a:exp.o hits=0
+SKIP  libc.a:fabs.o (only 8 fixed bytes)
+MATCH libc.a:floor.o @ 0x491fc size=0x2c
+MISS  libc.a:fmod.o hits=0
+MISS  libc.a:frexp.o hits=0
+MISS  libc.a:hypot.o hits=0
+MISS  libc.a:ldexp.o hits=0
+MISS  libc.a:log.o hits=0
+MISS  libc.a:log10.o hits=0
+MISS  libc.a:modf.o hits=0
+MATCH libc.a:modfl.o @ 0x52260 size=0x2c
+MISS  libc.a:pow.o hits=0
+MATCH libc.a:pow10.o @ 0x51418 size=0x4c
+MATCH libc.a:pow2.o @ 0x51464 size=0x48
+MATCH libc.a:sin.o @ 0x4baa0 size=0x1c
+MISS  libc.a:sinh.o hits=0
+SKIP  libc.a:sqrt.o (only 8 fixed bytes)
+MISS  libc.a:tan.o hits=0
+MISS  libc.a:tanh.o hits=0
+MATCH libc.a:longjmp.o @ 0x4884c size=0x74
+MATCH libc.a:setjmp.o @ 0x48adc size=0x58
+MATCH libc.a:allocfil.o @ 0x4ff20 size=0xa8
+MISS  libc.a:clearerr.o hits=0
+MATCH libc.a:doprnt.o @ 0x4e4bc size=0x16d8
+MATCH libc.a:doscan.o @ 0x50540 size=0x910
+MATCH libc.a:fclose.o @ 0x49148 size=0xac
+MISS  libc.a:feof.o hits=0
+MISS  libc.a:ferror.o hits=0
+MATCH libc.a:fflush.o @ 0x4bb18 size=0x80
+AMBIG libc.a:fgetc.o hits=2
+MISS  libc.a:fgetpos.o hits=0
+MATCH libc.a:fgets.o @ 0x4a414 size=0xdc
+MATCH libc.a:filbuf.o @ 0x4fda0 size=0x180
+MATCH libc.a:flsbuf.o @ 0x4fc70 size=0x130
+MATCH libc.a:fopen.o @ 0x48fa8 size=0x138
+MISS  libc.a:fprintf.o hits=0
+AMBIG libc.a:fputc.o hits=2
+MISS  libc.a:fputs.o hits=0
+MATCH libc.a:fread.o @ 0x48e7c size=0x12c
+MISS  libc.a:freopen.o hits=0
+MISS  libc.a:fscanf.o hits=0
+MATCH libc.a:fseek.o @ 0x4a594 size=0xf0
+MISS  libc.a:fsetpos.o hits=0
+MATCH libc.a:ftell.o @ 0x4b30c size=0x60
+MATCH libc.a:fwalk.o @ 0x52394 size=0x40
+MATCH libc.a:fwrite.o @ 0x48c68 size=0x214
+AMBIG libc.a:getc.o hits=2
+MISS  libc.a:getchar.o hits=0
+MISS  libc.a:gets.o hits=0
+MISS  libc.a:getw.o hits=0
+MISS  libc.a:perror.o hits=0
+MATCH libc.a:printf.o @ 0x4a550 size=0x28
+AMBIG libc.a:putc.o hits=2
+MISS  libc.a:putchar.o hits=0
+MISS  libc.a:puts.o hits=0
+MISS  libc.a:putw.o hits=0
+MATCH libc.a:remove.o @ 0x4a358 size=0xbc
+MISS  libc.a:rename.o hits=0
+MISS  libc.a:_rename.o hits=0
+MISS  libc.a:rewind.o hits=0
+MISS  libc.a:scanf.o hits=0
+MISS  libc.a:setbuf.o hits=0
+MISS  libc.a:setbuffe.o hits=0
+MISS  libc.a:setlineb.o hits=0
+MISS  libc.a:setvbuf.o hits=0
+MATCH libc.a:sprintf.o @ 0x54af0 size=0x38
+MATCH libc.a:sscanf.o @ 0x4b3bc size=0x44
+SKIP  libc.a:stdaux.o (only 0 fixed bytes)
+SKIP  libc.a:stderr.o (only 0 fixed bytes)
+SKIP  libc.a:stdin.o (only 0 fixed bytes)
+MATCH libc.a:stdiohk.o @ 0x50104 size=0x34
+SKIP  libc.a:stdout.o (only 0 fixed bytes)
+SKIP  libc.a:stdprn.o (only 0 fixed bytes)
+MISS  libc.a:tmpfile.o hits=0
+MISS  libc.a:tmpnam.o hits=0
+MATCH libc.a:ungetc.o @ 0x523d4 size=0x64
+MISS  libc.a:vfprintf.o hits=0
+MISS  libc.a:vprintf.o hits=0
+MATCH libc.a:vsprintf.o @ 0x48aa4 size=0x38
+MATCH libc.a:abort.o @ 0x4ca4c size=0x18
+AMBIG libc.a:abs.o hits=2
+MISS  libc.a:atexit.o hits=0
+AMBIG libc.a:atof.o hits=2
+MISS  libc.a:atoi.o hits=0
+MISS  libc.a:atol.o hits=0
+AMBIG libc.a:atold.o hits=2
+MISS  libc.a:bsearch.o hits=0
+MATCH libc.a:calloc.o @ 0x52038 size=0x30
+MISS  libc.a:div.o hits=0
+MATCH libc.a:exit.o @ 0x490e0 size=0x68
+MATCH libc.a:getenv.o @ 0x488c0 size=0x5c
+AMBIG libc.a:labs.o hits=2
+MISS  libc.a:ldiv.o hits=0
+MISS  libc.a:llabs.o hits=0
+MISS  libc.a:lldiv.o hits=0
+MATCH libc.a:malloc.o @ 0x4b7a4 size=0x234
+MATCH libc.a:qsort.o @ 0x54fa8 size=0x2d8
+MATCH libc.a:rand.o @ 0x4b188 size=0x8c
+MATCH libc.a:strtod.o @ 0x5477c size=0x19c
+MATCH libc.a:strtol.o @ 0x4bc9c size=0x180
+MATCH libc.a:strtold.o @ 0x54918 size=0x1b0
+MISS  libc.a:strtoll.o hits=0
+MATCH libc.a:strtoul.o @ 0x4be1c size=0x158
+MISS  libc.a:strtoull.o hits=0
+MISS  libc.a:system.o hits=0
+MATCH libc.a:memchr.o @ 0x4bc64 size=0x30
+MISS  libc.a:memcmp.o hits=0
+MATCH libc.a:memcpy.o @ 0x4bba0 size=0x1c
+MATCH libc.a:memmove.o @ 0x4bbbc size=0x28
+MATCH libc.a:memset.o @ 0x48b44 size=0x40
+MATCH libc.a:strcat.o @ 0x4a518 size=0x30
+MATCH libc.a:strchr.o @ 0x51da0 size=0x2c
+MATCH libc.a:strcmp.o @ 0x4acc4 size=0x28
+AMBIG libc.a:strcoll.o hits=15
+MATCH libc.a:strcpy.o @ 0x4a4f0 size=0x28
+MISS  libc.a:strcspn.o hits=0
+MISS  libc.a:strerror.o hits=0
+MISS  libc.a:strlen.o hits=0
+MATCH libc.a:strncat.o @ 0x520a4 size=0x40
+MATCH libc.a:strncmp.o @ 0x51224 size=0x3c
+MATCH libc.a:strncpy.o @ 0x52068 size=0x3c
+MISS  libc.a:strpbrk.o hits=0
+MATCH libc.a:strrchr.o @ 0x54ac8 size=0x28
+MISS  libc.a:strspn.o hits=0
+MATCH libc.a:strstr.o @ 0x4ad44 size=0x5c
+MISS  libc.a:strtok.o hits=0
+MISS  libc.a:strxfrm.o hits=0
+MATCH libc.a:ctime.o @ 0x52458 size=0x1824
+MATCH libc.a:difftime.o @ 0x4babc size=0x18
+MISS  libc.a:strftime.o hits=0
+MATCH libc.a:time.o @ 0x4ada0 size=0x34
+MISS  libc.a:bioscom.o hits=0
+MISS  libc.a:biosdisk.o hits=0
+MISS  libc.a:biosequi.o hits=0
+MISS  libc.a:bioskey.o hits=0
+MISS  libc.a:biosmem.o hits=0
+MISS  libc.a:biosprin.o hits=0
+MISS  libc.a:biostime.o hits=0
+MISS  libc.a:b_time.o hits=0
+MISS  libc.a:bcmp.o hits=0
+MISS  libc.a:bcopy.o hits=0
+MISS  libc.a:bzero.o hits=0
+SKIP  libc.a:index.o (only 4 fixed bytes)
+SKIP  libc.a:rindex.o (only 4 fixed bytes)
+AMBIG libc.a:chsize.o hits=15
+MISS  libc.a:ioctl.o hits=0
+MISS  libc.a:log2.o hits=0
+MISS  libc.a:mprotect.o hits=0
+MISS  libc.a:mntent.o hits=0
+MISS  libc.a:insque.o hits=0
+MISS  libc.a:remque.o hits=0
+MISS  libc.a:mkstemp.o hits=0
+MISS  libc.a:mktemp.o hits=0
+SKIP  libc.a:tempnam.o (only 8 fixed bytes)
+MISS  libc.a:alloca.o hits=0
+AMBIG libc.a:cfree.o hits=2
+MISS  libc.a:getlongp.o hits=0
+MISS  libc.a:getpass.o hits=0
+MATCH libc.a:itoa.o @ 0x4ac0c size=0xb0
+MATCH libc.a:putenv.o @ 0x4ca64 size=0x264
+MATCH libc.a:random.o @ 0x4add4 size=0x3b4
+MISS  libc.a:swab.o hits=0
+MISS  libc.a:xfree.o hits=0
+MISS  libc.a:xmalloc.o hits=0
+MISS  libc.a:xrealloc.o hits=0
+MISS  libc.a:ffs.o hits=0
+MISS  libc.a:memccpy.o hits=0
+MISS  libc.a:stpcpy.o hits=0
+SKIP  libc.a:strcasec.o (only 4 fixed bytes)
+MISS  libc.a:strdup.o hits=0
+MATCH libc.a:stricmp.o @ 0x511d4 size=0x50
+MATCH libc.a:strlwr.o @ 0x4b394 size=0x28
+SKIP  libc.a:strncase.o (only 4 fixed bytes)
+MISS  libc.a:strnicmp.o hits=0
+MISS  libc.a:strsep.o hits=0
+MATCH libc.a:strupr.o @ 0x4b394 size=0x28
+MISS  libc.a:resource.o hits=0
+MISS  libc.a:gtrlimit.o hits=0
+MISS  libc.a:strlimit.o hits=0
+MISS  libc.a:mknod.o hits=0
+MISS  libc.a:statfs.o hits=0
+MISS  libc.a:cfmakraw.o hits=0
+MISS  libc.a:cfstspd.o hits=0
+MISS  libc.a:rawclock.o hits=0
+MISS  libc.a:select.o hits=0
+MISS  libc.a:settimeo.o hits=0
+MISS  libc.a:utimes.o hits=0
+MISS  libc.a:fsync.o hits=0
+MISS  libc.a:ftruncat.o hits=0
+MISS  libc.a:getdtabl.o hits=0
+MISS  libc.a:gethostn.o hits=0
+MISS  libc.a:getpages.o hits=0
+MISS  libc.a:getwd.o hits=0
+MISS  libc.a:nice.o hits=0
+MISS  libc.a:sync.o hits=0
+MISS  libc.a:truncate.o hits=0
+MISS  libc.a:usleep.o hits=0
+MISS  libc.a:vfork.o hits=0
+SKIP  libc.a:_bcopy.o (only 4 fixed bytes)
+MISS  libc.a:fpurge.o hits=0
+MISS  libc.a:setenv.o hits=0
+MATCH libc.a:_main.o @ 0x4b9f0 size=0x44
+MISS  libc.a:brk.o hits=0
+MATCH libc.a:c1args.o @ 0x4cf8c size=0xa0c
+MATCH libc.a:c1loadef.o @ 0x4d998 size=0x584
+MATCH libc.a:c1pglob.o @ 0x52014 size=0x24
+MATCH libc.a:crt1.o @ 0x475a0 size=0x31c
+MISS  libc.a:mcount.o hits=0
+MISS  libc.a:memhandl.o hits=0
+MISS  libc.a:d_close.o hits=0
+MISS  libc.a:d_commit.o hits=0
+MISS  libc.a:d_creat.o hits=0
+MISS  libc.a:d_creatn.o hits=0
+MISS  libc.a:d_exterr.o hits=0
+MISS  libc.a:d_findf.o hits=0
+MISS  libc.a:d_findn.o hits=0
+MISS  libc.a:d_getdat.o hits=0
+MISS  libc.a:d_getdf.o hits=0
+MATCH libc.a:d_getdrv.o @ 0x51dcc size=0x28
+MISS  libc.a:d_getfa.o hits=0
+MISS  libc.a:d_getftm.o hits=0
+MISS  libc.a:d_gettim.o hits=0
+MISS  libc.a:d_open.o hits=0
+MISS  libc.a:d_read.o hits=0
+MISS  libc.a:d_setdat.o hits=0
+MISS  libc.a:d_setdrv.o hits=0
+MISS  libc.a:d_setfa.o hits=0
+MISS  libc.a:d_setftm.o hits=0
+MISS  libc.a:d_settim.o hits=0
+MISS  libc.a:d_write.o hits=0
+MATCH libc.a:findfirs.o @ 0x5022c size=0x200
+MATCH libc.a:findnext.o @ 0x50f30 size=0x1b8
+MISS  libc.a:fnmerge.o hits=0
+MISS  libc.a:fnsplit.o hits=0
+MISS  libc.a:ftreewlk.o hits=0
+MISS  libc.a:ftw.o hits=0
+MISS  libc.a:getdisk.o hits=0
+MISS  libc.a:setdisk.o hits=0
+MISS  libc.a:srchpath.o hits=0
+MISS  libc.a:bdos.o hits=0
+SKIP  libc.a:bdosptr.o (only 4 fixed bytes)
+MATCH libc.a:delay.o @ 0x4acec size=0x58
+MATCH libc.a:fexistp.o @ 0x5228c size=0x30
+MISS  libc.a:getcbrk.o hits=0
+MISS  libc.a:getdate.o hits=0
+MISS  libc.a:getdfree.o hits=0
+MATCH libc.a:getdinfo.o @ 0x51d58 size=0x48
+MATCH libc.a:getdos_v.o @ 0x515b4 size=0x1c0
+MISS  libc.a:getftime.o hits=0
+MISS  libc.a:gettime.o hits=0
+MATCH libc.a:gettimeo.o @ 0x51260 size=0xd8
+MATCH libc.a:int86.o @ 0x4b400 size=0x3a4
+MATCH libc.a:int86x.o @ 0x51358 size=0xc0
+MISS  libc.a:intdos.o hits=0
+MISS  libc.a:intdosx.o hits=0
+MISS  libc.a:remotdrv.o hits=0
+MISS  libc.a:remothdl.o hits=0
+MISS  libc.a:setcbrk.o hits=0
+MISS  libc.a:setdate.o hits=0
+MISS  libc.a:setftime.o hits=0
+MISS  libc.a:settime.o hits=0
+MISS  libc.a:truename.o hits=0
+MATCH libc.a:doserr2e.o @ 0x4e49c size=0x20
+MATCH libc.a:_chmod.o @ 0x50ea4 size=0x8c
+MATCH libc.a:_close.o @ 0x51fb0 size=0x64
+MATCH libc.a:_creat.o @ 0x522bc size=0xd8
+MATCH libc.a:_open.o @ 0x51df4 size=0xdc
+MATCH libc.a:_read.o @ 0x51ed0 size=0xe0
+MATCH libc.a:_write.o @ 0x48990 size=0xec
+MATCH libc.a:crlf2nl.o @ 0x53c7c size=0x30
+MATCH libc.a:dosio.o @ 0x4fbb4 size=0xbc
+MISS  libc.a:doslock.o hits=0
+MISS  libc.a:dosunloc.o hits=0
+MISS  libc.a:lock.o hits=0
+MATCH libc.a:putpath.o @ 0x520e4 size=0xf0
+MATCH libc.a:setmode.o @ 0x50138 size=0xe4
+MISS  libc.a:tell.o hits=0
+MISS  libc.a:unlock.o hits=0
+MISS  libc.a:flushdc.o hits=0
+MATCH libc.a:_use_lfn.o @ 0x4ccc8 size=0x2c4
+MATCH libc.a:fncase.o @ 0x54f68 size=0x40
+MATCH libc.a:lfnftime.o @ 0x519c4 size=0x78
+MATCH libc.a:lfnshort.o @ 0x54b28 size=0x150
+MISS  libc.a:dosexec.o hits=0
+MISS  libc.a:spawnl.o hits=0
+MISS  libc.a:spawnle.o hits=0
+MISS  libc.a:spawnlp.o hits=0
+MISS  libc.a:spawnlpe.o hits=0
+MISS  libc.a:spawnv.o hits=0
+MISS  libc.a:spawnvp.o hits=0
+MISS  libc.a:spawnvpe.o hits=0
+MATCH libc.a:ftime.o @ 0x4ba34 size=0x50
+SKIP  libc.a:2f_1680.o (only 8 fixed bytes)
+MATCH libc.a:d0000.o @ 0x4c96c size=0x24
+MISS  libc.a:d0001.o hits=0
+MISS  libc.a:d0002.o hits=0
+MISS  libc.a:d0003.o hits=0
+MATCH libc.a:d0006.o @ 0x4c9f4 size=0x2c
+MISS  libc.a:d0007.o hits=0
+MATCH libc.a:d0008.o @ 0x4c990 size=0x2c
+MISS  libc.a:d0009.o hits=0
+MISS  libc.a:d000a.o hits=0
+MISS  libc.a:d000b.o hits=0
+MISS  libc.a:d000c.o hits=0
+MISS  libc.a:d000d.o hits=0
+MISS  libc.a:d000e.o hits=0
+MISS  libc.a:d000f.o hits=0
+MATCH libc.a:d0100.o @ 0x4e234 size=0x3c
+MATCH libc.a:d0101.o @ 0x4e270 size=0x24
+MATCH libc.a:d0102.o @ 0x4e294 size=0x30
+MATCH libc.a:d0200.o @ 0x4e188 size=0x30
+MATCH libc.a:d0201.o @ 0x4e130 size=0x30
+MATCH libc.a:d0202.o @ 0x4e080 size=0x2c
+MATCH libc.a:d0203.o @ 0x4e0ac size=0x2c
+MATCH libc.a:d0204.o @ 0x4e0d8 size=0x2c
+MATCH libc.a:d0205.o @ 0x4e104 size=0x2c
+MISS  libc.a:d0210.o hits=0
+MISS  libc.a:d0211.o hits=0
+MISS  libc.a:d0212.o hits=0
+MISS  libc.a:d0213.o hits=0
+MATCH libc.a:d0300.o @ 0x48b84 size=0x38
+MATCH libc.a:d0300_z.o @ 0x4a698 size=0x80
+MISS  libc.a:d0301.o hits=0
+MISS  libc.a:d0301_s.o hits=0
+MISS  libc.a:d0302.o hits=0
+MATCH libc.a:d0303.o @ 0x4e1b8 size=0x44
+MATCH libc.a:d0304.o @ 0x4e160 size=0x28
+MISS  libc.a:d0305.o hits=0
+MISS  libc.a:d0306.o hits=0
+MATCH libc.a:d0400.o @ 0x4c9bc size=0x38
+MISS  libc.a:d0401.o hits=0
+MATCH libc.a:d0500.o @ 0x4e2c4 size=0x24
+MISS  libc.a:d0501.o hits=0
+MISS  libc.a:d0502.o hits=0
+MISS  libc.a:d0503.o hits=0
+MISS  libc.a:d0504.o hits=0
+MISS  libc.a:d0505.o hits=0
+MISS  libc.a:d0506.o hits=0
+MISS  libc.a:d0507.o hits=0
+MISS  libc.a:d0508.o hits=0
+MISS  libc.a:d0509.o hits=0
+MISS  libc.a:d050a.o hits=0
+MISS  libc.a:d050b.o hits=0
+MATCH libc.a:d0600.o @ 0x4e1fc size=0x38
+MISS  libc.a:d0601.o hits=0
+MISS  libc.a:d0602.o hits=0
+MISS  libc.a:d0603.o hits=0
+MISS  libc.a:d0604.o hits=0
+MISS  libc.a:d0702.o hits=0
+MISS  libc.a:d0703.o hits=0
+MISS  libc.a:d0800.o hits=0
+MISS  libc.a:d0801.o hits=0
+MISS  libc.a:d09.o hits=0
+MATCH libc.a:d0900.o @ 0x4e2e8 size=0x10
+MATCH libc.a:d0901.o @ 0x4e2f8 size=0x10
+MISS  libc.a:d0902.o hits=0
+MISS  libc.a:d0a00.o hits=0
+MISS  libc.a:d0b00.o hits=0
+MISS  libc.a:d0b01.o hits=0
+MISS  libc.a:d0b02.o hits=0
+MISS  libc.a:d0b03.o hits=0
+MISS  libc.a:d0c00.o hits=0
+MISS  libc.a:d0c01.o hits=0
+MISS  libc.a:d0d00.o hits=0
+MISS  libc.a:d0d01.o hits=0
+MISS  libc.a:d0d02.o hits=0
+MISS  libc.a:d0d03.o hits=0
+MISS  libc.a:d0e00.o hits=0
+MATCH libc.a:d0e01.o @ 0x4891c size=0x28
+MISS  libc.a:dpmi_lar.o hits=0
+MATCH libc.a:dpmi_lsl.o @ 0x4e06c size=0x14
+MISS  libc.a:mapmem.o hits=0
+MISS  libc.a:setattr.o hits=0
+MISS  libc.a:dxeload.o hits=0
+MISS  libc.a:npxsetup.o hits=0
+MATCH libc.a:fpu.o @ 0x48944 size=0x4c
+MATCH libc.a:fse_open.o @ 0x53cac size=0x74
+MATCH libc.a:fsext.o @ 0x4e308 size=0x174
+MATCH libc.a:dpmiexcp.o @ 0x47c44 size=0xc08
+MATCH libc.a:exceptn.o @ 0x478bc size=0x388
+MISS  libc.a:go32cbrk.o hits=0
+MISS  libc.a:godefv1.o hits=0
+MATCH libc.a:gopint.o @ 0x4a76c size=0x4a0
+MATCH libc.a:gopvec.o @ 0x4a744 size=0x28
+MATCH libc.a:goqmem.o @ 0x4bad4 size=0x38
+MISS  libc.a:gormcb.o hits=0
+MATCH libc.a:gormem.o @ 0x48bbc size=0x9c
+MISS  libc.a:gorvec.o hits=0
+MATCH libc.a:conio.o @ 0x49230 size=0x1128
+MISS  libc.a:scclear.o hits=0
+MATCH libc.a:sccols.o @ 0x50e50 size=0x1c
+MATCH libc.a:scgetc.o @ 0x50454 size=0x34
+MISS  libc.a:scgetch.o hits=0
+MATCH libc.a:scmode.o @ 0x50e88 size=0x1c
+MATCH libc.a:scputc.o @ 0x50488 size=0x68
+MISS  libc.a:scputs.o hits=0
+MISS  libc.a:scretr.o hits=0
+MATCH libc.a:scrows.o @ 0x50e6c size=0x1c
+MATCH libc.a:scsetc.o @ 0x5042c size=0x28
+MISS  libc.a:scupdate.o hits=0
+MISS  libc.a:scupdl.o hits=0
+MISS  libc.a:scvbell.o hits=0
+SKIP  libc.a:my_cs.o (only 8 fixed bytes)
+SKIP  libc.a:my_ds.o (only 8 fixed bytes)
+SKIP  libc.a:my_ss.o (only 8 fixed bytes)
+MISS  libc.a:htonl.o hits=0
+SKIP  libc.a:htons.o (only 8 fixed bytes)
+MISS  libc.a:ntohl.o hits=0
+SKIP  libc.a:ntohs.o (only 8 fixed bytes)
+MISS  libc.a:farptr.o hits=0
+SKIP  libc.a:clear87.o (only 8 fixed bytes)
+MATCH libc.a:cntrl87.o @ 0x48a7c size=0x28
+SKIP  libc.a:fpreset.o (only 4 fixed bytes)
+SKIP  libc.a:stat87.o (only 8 fixed bytes)
+SKIP  libc.a:disable.o (only 8 fixed bytes)
+SKIP  libc.a:enable.o (only 8 fixed bytes)
+MATCH libc.a:ib.o @ 0x51338 size=0x10
+MISS  libc.a:il.o hits=0
+SKIP  libc.a:inb.o (only 4 fixed bytes)
+SKIP  libc.a:inp.o (only 4 fixed bytes)
+SKIP  libc.a:inpw.o (only 4 fixed bytes)
+MISS  libc.a:isb.o hits=0
+MISS  libc.a:isl.o hits=0
+MISS  libc.a:isw.o hits=0
+MISS  libc.a:iw.o hits=0
+MATCH libc.a:ob.o @ 0x51348 size=0x10
+MISS  libc.a:ol.o hits=0
+MISS  libc.a:osb.o hits=0
+MISS  libc.a:osl.o hits=0
+MISS  libc.a:osw.o hits=0
+SKIP  libc.a:outb.o (only 4 fixed bytes)
+SKIP  libc.a:outp.o (only 4 fixed bytes)
+SKIP  libc.a:outpw.o (only 4 fixed bytes)
+MISS  libc.a:ow.o hits=0
+MISS  libc.a:getkey.o hits=0
+MISS  libc.a:getxkey.o hits=0
+MATCH libc.a:kbhit.o @ 0x504f0 size=0x50
+MATCH libc.a:djmd.o @ 0x514ac size=0x28
+MATCH libc.a:dmg.o @ 0x4fb94 size=0x20
+MATCH libc.a:dmgb.o @ 0x4fb94 size=0x20
+MATCH libc.a:dmgl.o @ 0x4fb94 size=0x20
+MATCH libc.a:dmgw.o @ 0x4fb94 size=0x20
+MATCH libc.a:dmp.o @ 0x4e47c size=0x20
+MATCH libc.a:dmpb.o @ 0x4e47c size=0x20
+MATCH libc.a:dmpl.o @ 0x4e47c size=0x20
+MATCH libc.a:dmpw.o @ 0x4e47c size=0x20
+MATCH libc.a:md.o @ 0x4ca20 size=0x2c
+MISS  libc.a:mdb.o hits=0
+MATCH libc.a:mdl.o @ 0x4a718 size=0x2c
+MISS  libc.a:mdw.o hits=0
+MISS  libc.a:mono.o hits=0
+MISS  libc.a:nearptr.o hits=0
+MISS  libc.a:sound.o hits=0
+MISS  libc.a:clock.o hits=0
+MISS  libc.a:uclock.o hits=0
+MISS  libc.a:closedir.o hits=0
+MISS  libc.a:opendir.o hits=0
+MISS  libc.a:readdir.o hits=0
+MISS  libc.a:rewinddi.o hits=0
+MISS  libc.a:seekdir.o hits=0
+MISS  libc.a:telldir.o hits=0
+MISS  libc.a:creat.o hits=0
+MISS  libc.a:fcntl.o hits=0
+MATCH libc.a:open.o @ 0x4ffc8 size=0xd8
+MATCH libc.a:fnmatch.o @ 0x54c78 size=0x2f0
+MATCH libc.a:glob.o @ 0x53d20 size=0xa54
+MISS  libc.a:globfree.o hits=0
+MISS  libc.a:getgrent.o hits=0
+MISS  libc.a:getgrgid.o hits=0
+MISS  libc.a:getpwnam.o hits=0
+MISS  libc.a:getpwuid.o hits=0
+MISS  libc.a:pwent.o hits=0
+MISS  libc.a:regcomp.o hits=0
+MISS  libc.a:regerror.o hits=0
+MISS  libc.a:regexec.o hits=0
+MISS  libc.a:regfree.o hits=0
+SKIP  libc.a:siglongj.o (only 4 fixed bytes)
+SKIP  libc.a:sigsetjm.o (only 4 fixed bytes)
+MISS  libc.a:itimer.o hits=0
+MISS  libc.a:kill.o hits=0
+MISS  libc.a:sigactio.o hits=0
+MISS  libc.a:sigaddse.o hits=0
+MISS  libc.a:sigdelse.o hits=0
+MISS  libc.a:sigempty.o hits=0
+MISS  libc.a:sigfills.o hits=0
+MISS  libc.a:sigismem.o hits=0
+AMBIG libc.a:sigpendi.o hits=2
+SKIP  libc.a:sigprocm.o (only 8 fixed bytes)
+SKIP  libc.a:sigsuspe.o (only 8 fixed bytes)
+MISS  libc.a:fdopen.o hits=0
+MATCH libc.a:fileno.o @ 0x4a578 size=0x14
+MISS  libc.a:popen.o hits=0
+MISS  libc.a:chmod.o hits=0
+MATCH libc.a:filelen.o @ 0x510e8 size=0xec
+MISS  libc.a:fixpath.o hits=0
+MATCH libc.a:fstat.o @ 0x4bf94 size=0x9d8
+MATCH libc.a:is_exec.o @ 0x51a54 size=0x304
+MISS  libc.a:mkdir.o hits=0
+MISS  libc.a:mkfifo.o hits=0
+MISS  libc.a:st_loss.o hits=0
+MISS  libc.a:stat.o hits=0
+MISS  libc.a:umask.o hits=0
+MATCH libc.a:xstat.o @ 0x51774 size=0x250
+MISS  libc.a:times.o hits=0
+MISS  libc.a:wait.o hits=0
+MISS  libc.a:waitpid.o hits=0
+MISS  libc.a:cfgtispd.o hits=0
+MISS  libc.a:cfgtospd.o hits=0
+MISS  libc.a:cfstispd.o hits=0
+MISS  libc.a:cfstospd.o hits=0
+MISS  libc.a:tcdrain.o hits=0
+MISS  libc.a:tcflow.o hits=0
+MISS  libc.a:tcflush.o hits=0
+MISS  libc.a:tcgetatr.o hits=0
+MISS  libc.a:tcsetatr.o hits=0
+MISS  libc.a:tcsndbrk.o hits=0
+MISS  libc.a:tminit.o hits=0
+MISS  libc.a:access.o hits=0
+MISS  libc.a:alarm.o hits=0
+MISS  libc.a:chdir.o hits=0
+MISS  libc.a:chown.o hits=0
+AMBIG libc.a:close.o hits=2
+MISS  libc.a:ctermid.o hits=0
+MISS  libc.a:dup.o hits=0
+MISS  libc.a:dup2.o hits=0
+MISS  libc.a:execl.o hits=0
+MISS  libc.a:execle.o hits=0
+MISS  libc.a:execlp.o hits=0
+MISS  libc.a:execlpe.o hits=0
+MISS  libc.a:execv.o hits=0
+MISS  libc.a:execve.o hits=0
+MISS  libc.a:execvp.o hits=0
+MISS  libc.a:execvpe.o hits=0
+MISS  libc.a:fork.o hits=0
+MISS  libc.a:fpathcon.o hits=0
+MISS  libc.a:getcwd.o hits=0
+AMBIG libc.a:getegid.o hits=2
+AMBIG libc.a:geteuid.o hits=2
+AMBIG libc.a:getgid.o hits=2
+SKIP  libc.a:getgroup.o (only 8 fixed bytes)
+MISS  libc.a:getlogin.o hits=0
+MISS  libc.a:getopt.o hits=0
+SKIP  libc.a:getpgrp.o (only 8 fixed bytes)
+MISS  libc.a:getpid.o hits=0
+MISS  libc.a:getppid.o hits=0
+AMBIG libc.a:getuid.o hits=2
+MATCH libc.a:isatty.o @ 0x514d4 size=0x38
+MISS  libc.a:link.o hits=0
+MATCH libc.a:lseek.o @ 0x500a0 size=0x64
+MISS  libc.a:pathconf.o hits=0
+SKIP  libc.a:pause.o (only 8 fixed bytes)
+MISS  libc.a:pipe.o hits=0
+MATCH libc.a:read.o @ 0x5150c size=0xa8
+MISS  libc.a:rmdir.o hits=0
+MISS  libc.a:setgid.o hits=0
+MISS  libc.a:setpgid.o hits=0
+SKIP  libc.a:setsid.o (only 8 fixed bytes)
+MISS  libc.a:setuid.o hits=0
+MISS  libc.a:sleep.o hits=0
+MISS  libc.a:symlink.o hits=0
+MISS  libc.a:sysconf.o hits=0
+MISS  libc.a:ttyname.o hits=0
+SKIP  libc.a:unlink.o (only 4 fixed bytes)
+MATCH libc.a:write.o @ 0x4df1c size=0x150
+MISS  libc.a:utime.o hits=0
+MISS  libc.a:uname.o hits=0
+SKIP  libc.a:stub0000.o (only 4 fixed bytes)
+SKIP  libc.a:stub0001.o (only 4 fixed bytes)
+SKIP  libc.a:stub0002.o (only 4 fixed bytes)
+SKIP  libc.a:stub0003.o (only 4 fixed bytes)
+SKIP  libc.a:stub0004.o (only 4 fixed bytes)
+SKIP  libc.a:stub0005.o (only 4 fixed bytes)
+SKIP  libc.a:stub0006.o (only 4 fixed bytes)
+SKIP  libc.a:stub0007.o (only 4 fixed bytes)
+SKIP  libc.a:stub0008.o (only 4 fixed bytes)
+SKIP  libc.a:stub0009.o (only 4 fixed bytes)
+SKIP  libc.a:stub0010.o (only 4 fixed bytes)
+SKIP  libc.a:stub0011.o (only 4 fixed bytes)
+SKIP  libc.a:stub0012.o (only 4 fixed bytes)
+SKIP  libc.a:stub0013.o (only 4 fixed bytes)
+SKIP  libc.a:stub0014.o (only 4 fixed bytes)
+SKIP  libc.a:stub0015.o (only 4 fixed bytes)
+SKIP  libc.a:stub0016.o (only 4 fixed bytes)
+SKIP  libc.a:stub0017.o (only 4 fixed bytes)
+SKIP  libc.a:stub0018.o (only 4 fixed bytes)
+SKIP  libc.a:stub0019.o (only 4 fixed bytes)
+SKIP  libc.a:stub0020.o (only 4 fixed bytes)
+SKIP  libc.a:stub0021.o (only 4 fixed bytes)
+SKIP  libc.a:stub0022.o (only 4 fixed bytes)
+SKIP  libc.a:stub0023.o (only 4 fixed bytes)
+SKIP  libc.a:stub0024.o (only 4 fixed bytes)
+SKIP  libc.a:stub0025.o (only 4 fixed bytes)
+SKIP  libc.a:stub0026.o (only 4 fixed bytes)
+SKIP  libc.a:stub0027.o (only 4 fixed bytes)
+SKIP  libc.a:stub0028.o (only 4 fixed bytes)
+SKIP  libc.a:stub0029.o (only 4 fixed bytes)
+SKIP  libc.a:stub0030.o (only 4 fixed bytes)
+SKIP  libc.a:stub0031.o (only 4 fixed bytes)
+SKIP  libc.a:stub0032.o (only 4 fixed bytes)
+SKIP  libc.a:stub0033.o (only 4 fixed bytes)
+SKIP  libc.a:stub0034.o (only 4 fixed bytes)
+SKIP  libc.a:stub0035.o (only 4 fixed bytes)
+SKIP  libc.a:stub0036.o (only 4 fixed bytes)
+SKIP  libc.a:stub0037.o (only 4 fixed bytes)
+SKIP  libc.a:stub0038.o (only 4 fixed bytes)
+MISS  libm.a:e_acos.o hits=0
+MISS  libm.a:e_acosh.o hits=0
+MISS  libm.a:e_asin.o hits=0
+MISS  libm.a:e_atan2.o hits=0
+MISS  libm.a:e_atanh.o hits=0
+MISS  libm.a:e_cosh.o hits=0
+MISS  libm.a:e_exp.o hits=0
+MISS  libm.a:e_fmod.o hits=0
+MISS  libm.a:e_gamma.o hits=0
+MISS  libm.a:e_hypot.o hits=0
+MISS  libm.a:e_j0.o hits=0
+MISS  libm.a:e_j1.o hits=0
+MISS  libm.a:e_jn.o hits=0
+MISS  libm.a:e_lgamma.o hits=0
+MISS  libm.a:e_log.o hits=0
+MISS  libm.a:e_log10.o hits=0
+MISS  libm.a:e_pow.o hits=0
+MISS  libm.a:e_rem_pi.o hits=0
+MISS  libm.a:e_remain.o hits=0
+MISS  libm.a:e_scalb.o hits=0
+MISS  libm.a:e_sinh.o hits=0
+MISS  libm.a:e_sqrt.o hits=0
+MISS  libm.a:ef_acos.o hits=0
+MISS  libm.a:ef_acosh.o hits=0
+MISS  libm.a:ef_asin.o hits=0
+MISS  libm.a:ef_atan2.o hits=0
+MISS  libm.a:ef_atanh.o hits=0
+MISS  libm.a:ef_cosh.o hits=0
+MISS  libm.a:ef_exp.o hits=0
+MISS  libm.a:ef_fmod.o hits=0
+MISS  libm.a:ef_gamma.o hits=0
+MISS  libm.a:ef_hypot.o hits=0
+MISS  libm.a:ef_j0.o hits=0
+MISS  libm.a:ef_j1.o hits=0
+MISS  libm.a:ef_jn.o hits=0
+MISS  libm.a:ef_lgamm.o hits=0
+MISS  libm.a:ef_log.o hits=0
+MISS  libm.a:ef_log10.o hits=0
+MISS  libm.a:ef_pow.o hits=0
+MISS  libm.a:ef_rem_p.o hits=0
+MISS  libm.a:ef_remai.o hits=0
+MISS  libm.a:ef_scalb.o hits=0
+MISS  libm.a:ef_sinh.o hits=0
+MISS  libm.a:ef_sqrt.o hits=0
+MISS  libm.a:er_gamma.o hits=0
+MISS  libm.a:er_lgamm.o hits=0
+MISS  libm.a:erf_gamm.o hits=0
+MISS  libm.a:erf_lgam.o hits=0
+MISS  libm.a:k_cos.o hits=0
+MISS  libm.a:k_rem_pi.o hits=0
+MISS  libm.a:k_sin.o hits=0
+MISS  libm.a:k_standa.o hits=0
+MISS  libm.a:k_tan.o hits=0
+MISS  libm.a:kf_cos.o hits=0
+MISS  libm.a:kf_rem_p.o hits=0
+MISS  libm.a:kf_sin.o hits=0
+MISS  libm.a:kf_tan.o hits=0
+MISS  libm.a:s_asinh.o hits=0
+MISS  libm.a:s_atan.o hits=0
+MISS  libm.a:s_cbrt.o hits=0
+MISS  libm.a:s_ceil.o hits=0
+MISS  libm.a:s_copysi.o hits=0
+MISS  libm.a:s_cos.o hits=0
+MISS  libm.a:s_erf.o hits=0
+MISS  libm.a:s_expm1.o hits=0
+MISS  libm.a:s_fabs.o hits=0
+MISS  libm.a:s_finite.o hits=0
+MISS  libm.a:s_floor.o hits=0
+MISS  libm.a:s_frexp.o hits=0
+MISS  libm.a:s_ilogb.o hits=0
+MISS  libm.a:s_isinf.o hits=0
+MISS  libm.a:s_isnan.o hits=0
+MISS  libm.a:s_ldexp.o hits=0
+MISS  libm.a:s_log1p.o hits=0
+MISS  libm.a:s_logb.o hits=0
+MISS  libm.a:s_mather.o hits=0
+MISS  libm.a:s_modf.o hits=0
+MISS  libm.a:s_nextaf.o hits=0
+MISS  libm.a:s_rint.o hits=0
+MISS  libm.a:s_scalbn.o hits=0
+MISS  libm.a:s_signif.o hits=0
+MISS  libm.a:s_sin.o hits=0
+MISS  libm.a:s_tan.o hits=0
+MISS  libm.a:s_tanh.o hits=0
+MISS  libm.a:sf_asinh.o hits=0
+MISS  libm.a:sf_atan.o hits=0
+MISS  libm.a:sf_cbrt.o hits=0
+MISS  libm.a:sf_ceil.o hits=0
+MISS  libm.a:sf_copys.o hits=0
+MISS  libm.a:sf_cos.o hits=0
+MISS  libm.a:sf_erf.o hits=0
+MISS  libm.a:sf_expm1.o hits=0
+MISS  libm.a:sf_fabs.o hits=0
+MISS  libm.a:sf_finit.o hits=0
+MISS  libm.a:sf_floor.o hits=0
+MISS  libm.a:sf_frexp.o hits=0
+MISS  libm.a:sf_ilogb.o hits=0
+MISS  libm.a:sf_isinf.o hits=0
+MISS  libm.a:sf_isnan.o hits=0
+MISS  libm.a:sf_ldexp.o hits=0
+MISS  libm.a:sf_log1p.o hits=0
+MISS  libm.a:sf_logb.o hits=0
+MISS  libm.a:sf_modf.o hits=0
+MISS  libm.a:sf_nexta.o hits=0
+MISS  libm.a:sf_rint.o hits=0
+MISS  libm.a:sf_scalb.o hits=0
+MISS  libm.a:sf_signi.o hits=0
+MISS  libm.a:sf_sin.o hits=0
+MISS  libm.a:sf_tan.o hits=0
+MISS  libm.a:sf_tanh.o hits=0
+MISS  libm.a:w_acos.o hits=0
+MISS  libm.a:w_acosh.o hits=0
+MISS  libm.a:w_asin.o hits=0
+MISS  libm.a:w_atan2.o hits=0
+MISS  libm.a:w_atanh.o hits=0
+MISS  libm.a:w_cabs.o hits=0
+MISS  libm.a:w_cosh.o hits=0
+MISS  libm.a:w_drem.o hits=0
+MISS  libm.a:w_exp.o hits=0
+MISS  libm.a:w_fmod.o hits=0
+MISS  libm.a:w_gamma.o hits=0
+MISS  libm.a:w_hypot.o hits=0
+MISS  libm.a:w_j0.o hits=0
+MISS  libm.a:w_j1.o hits=0
+MISS  libm.a:w_jn.o hits=0
+MISS  libm.a:w_lgamma.o hits=0
+MISS  libm.a:w_log.o hits=0
+MISS  libm.a:w_log10.o hits=0
+MISS  libm.a:w_pow.o hits=0
+MISS  libm.a:w_remain.o hits=0
+MISS  libm.a:w_scalb.o hits=0
+MISS  libm.a:w_sinh.o hits=0
+MISS  libm.a:w_sqrt.o hits=0
+MISS  libm.a:wf_acos.o hits=0
+MISS  libm.a:wf_acosh.o hits=0
+MISS  libm.a:wf_asin.o hits=0
+MISS  libm.a:wf_atan2.o hits=0
+MISS  libm.a:wf_atanh.o hits=0
+MISS  libm.a:wf_cabs.o hits=0
+MISS  libm.a:wf_cosh.o hits=0
+MISS  libm.a:wf_drem.o hits=0
+MISS  libm.a:wf_exp.o hits=0
+MISS  libm.a:wf_fmod.o hits=0
+MISS  libm.a:wf_gamma.o hits=0
+MISS  libm.a:wf_hypot.o hits=0
+MISS  libm.a:wf_j0.o hits=0
+MISS  libm.a:wf_j1.o hits=0
+MISS  libm.a:wf_jn.o hits=0
+MISS  libm.a:wf_lgamm.o hits=0
+MISS  libm.a:wf_log.o hits=0
+MISS  libm.a:wf_log10.o hits=0
+MISS  libm.a:wf_pow.o hits=0
+MISS  libm.a:wf_remai.o hits=0
+MISS  libm.a:wf_scalb.o hits=0
+MISS  libm.a:wf_sinh.o hits=0
+MISS  libm.a:wf_sqrt.o hits=0
+MISS  libm.a:wr_gamma.o hits=0
+MISS  libm.a:wr_lgamm.o hits=0
+MISS  libm.a:wrf_gamm.o hits=0
+MISS  libm.a:wrf_lgam.o hits=0
+MATCH libemu.a:emu387.o @ 0x16f0 size=0x5c8c
+MATCH libemu.a:npxsetup.o @ 0x1550 size=0x1a0
+CONFLICT ref _movedatal: object says 0x4a718, reloc says 0x4ca20
