@@ -1,0 +1,21 @@
+va,name,kind,confidence,notes
+0x000010A8,start,func,C,COFF entry point
+0x00010570,set_mode13,func,C,__dpmi_int(0x10) AX=0x13
+0x0001058C,set_textmode,func,C,__dpmi_int(0x10) AX=0x03
+0x000109A4,vsync_flip,func,C,wait 0x3DA bit3 then movedata(backbuf -> 0xA0000 64000)
+0x000109E0,flip,func,H,called every frame in main loop
+0x0001AF48,random_n,func,C,"n>0 ? rand()%n : 0 (174 callers)"
+0x000220E0,timer_isr,func,C,tick_flag=1; tick_count++; EOI
+0x00022124,timer_install,func,C,divisor=min(1193180.0/hz;65535)
+0x0004A684,movedata,func,H,libc
+0x0004A698,__dpmi_int,func,H,libc
+0x0004A744,_go32_dpmi_get_protected_mode_interrupt_vector,func,H,libc
+0x0004A758,_go32_dpmi_set_protected_mode_interrupt_vector,func,H,libc
+0x0004B0FC,rand,func,C,DJGPP v2.01 libc BSD random / LCG 0x41C64E6D+0x3039
+0x0004BA8C,cos,func,C,libm
+0x0004BAA8,sin,func,C,libm
+0x0005F104,g_io_base,data,H,serial/SB I/O base port variable
+0x000769F0,tick_flag,data,C,set by timer_isr
+0x000769F4,tick_count,data,C,incremented by timer_isr
+0x0009D744,frame_counter,data,H,FPS statistic reset every 200 frames
+0x0009D760,g_framerate,data,C,PIT Hz option (default 50)
