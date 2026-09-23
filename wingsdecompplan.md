@@ -108,7 +108,7 @@ Project root contains two archives; both extracted (unchanged) to `original/`.
 - **[C]** Compiler: **gcc 2.7.2.1**, runtime **DJGPP v2.01 libc built Oct 31 1996** + **libemu** (387 emulator, Sep 19 1996). Language **C++** (mangled-style class names in error strings: `ship_type_t::load()`, `sample_t::lock_memory()`, `mod_t::lock_memory()`, `channel_t::lock_memory()`; libg++ `Virtual memory exceeded in 'new'`).
 - **[C]** No overlays, no packer/compression on the EXE. Read-only data (strings, float constants, jump tables) lives **inside `.text`** (gcc 2.7 behaviour) — linear disassembly will mis-decode those areas.
 - **[C]** `.data` is ~92% zero: ~280 KB of statically-allocated game arrays (object pools, buffers). Its layout will reveal pool sizes (e.g. max projectiles, max particles).
-- **[H]** Game code occupies roughly VA 0x1100–0x3A000; DJGPP libc/libemu/libgpp from ~0x3A000 upward. ≈1,350 `push ebp` function prologues in total. gcc 2.7 `-O2` style (frame pointers kept → easy function boundaries).
+- ~~**[H]** Game code occupies roughly VA 0x1100–0x3A000; DJGPP libc/libemu/libgpp from ~0x3A000 upward.~~ **Corrected [C]** (tools/lib_match.py, exact masked-byte match): `crt0` 0x10A8–0x1550, `libemu` 0x1550–0x737C, game (+ unlabelled libgcc/libg++ 2.7) 0x737C–0x475A0, DJGPP libc 0x475A0–0x55400. ≈1,350 `push ebp` function prologues in total. gcc 2.7 `-O2` style (frame pointers kept → easy function boundaries).
 - **[C]** CPU target: 386+ with optional 387 (emulated if missing); doc says 386 minimum, 486/66 recommended.
 - Useful fingerprints: DJGPP v2.01 libc is publicly archived; its object code can be compiled into Ghidra FunctionID / IDA FLIRT signatures to auto-label ~all runtime functions.
 
@@ -128,8 +128,8 @@ Project root contains two archives; both extracted (unchanged) to `original/`.
 - **[C]** VGA **mode 13h** (320×200×256): `set_mode` at VA 0x10570 (`__dpmi_int(0x10)` with AX=0x13); text mode restore at 0x1058C.
 - **[C]** Double-buffered: a 64,000-byte system-RAM back buffer copied with `movedata()` to 0xA0000 after waiting for vertical retrace (port 0x3DA, bit 3) — VA 0x109A4.
 - **[C]** Palette via ports 0x3C7/0x3C8/0x3C9 (6-bit DAC). Palette colours 0–47 fixed by the game; 48–255 come from each level (COLORS.TXT).
-- **[H]** **Per-player viewport is 157×90 pixels**, 4 viewports on the 320×200 screen (2×2 split with borders/HUD). Evidence: minimum level size 157×90; parallax background size formula `bg = level/2 + (78, 45)` ≡ `(level − view)/2 + view` for view = 157×90 (i.e. background scrolls at half speed); doc says with >4 players you choose which ≤4 are "shown". **This tiny viewport is a core part of the game feel and must be preserved (or consciously changed) in the port.**
-- **[C]** Sprites: ships are 15×15, 72 frames each (see §3.8); effects/weapons come from PCX atlases (`W_PICT`, `W_PICT2`, `W_WEAP`). **[H]** 72 frames = 36 rotation angles (10°) × 2 visual variants (e.g. engine on/off) — to be confirmed from the draw code.
+- **[C]** (was [H]; confirmed by match_main render call `x-78..x+78, y-45..y+44` and a 1-player screenshot) **Per-player viewport is 157×90 pixels**, 4 viewports on the 320×200 screen (2×2 split with borders/HUD). Evidence: minimum level size 157×90; parallax background size formula `bg = level/2 + (78, 45)` ≡ `(level − view)/2 + view` for view = 157×90 (i.e. background scrolls at half speed); doc says with >4 players you choose which ≤4 are "shown". **This tiny viewport is a core part of the game feel and must be preserved (or consciously changed) in the port.**
+- **[C]** Sprites: ships are 15×15, 72 frames each (see §3.8); effects/weapons come from PCX atlases (`W_PICT`, `W_PICT2`, `W_WEAP`). ~~**[H]** 72 frames = 36 rotation angles (10°) × 2 visual variants~~ **[C]** 72 frames = 72 rotations of 5°: sprite index = `angle_deg/5` (match_main draw + terrain collide).
 - **[C]** Options exposed: Framerate, Stars, Parallax, Flowing water, Flowing speed, Waves → water is a simulated pixel fluid (cellular automaton on the terrain bitmap), a significant CPU and sync concern.
 - **[C]** F12 screenshot writes `screen.pcx` (PCX writer in EXE — a useful debug aid: can dump the back buffer).
 
@@ -138,14 +138,14 @@ Project root contains two archives; both extracted (unchanged) to `original/`.
 - **[C]** Custom INT 9 keyboard handler, scancode-based. Up to 8 players; bindings from `KEYS.DAT` (5 actions: thrust, turn left, turn right, fire primary, fire secondary; separate layouts for 1–3 and 4-player games per WINGS.DOC).
 - **[C]** Global keys: ESC pause/quit, F1 pause, F2 FPS display (`Time: %d   FPS: %.2lf`), F10 quit from pause, F12 screenshot, `c` chat (in-game results screen, remote play).
 - **[C]** At a base, turn-left/turn-right cycle secondary weapons (WINGS.DOC).
-- **[H]** Input is sampled once per simulation tick from the key-state table (typical for this design) — verify.
+- **[C]** Input is sampled once per tick: `g_keytable_live` 0x5E3D4 → snapshot 0x5E4D4 at frame start → 5 flags per player via its bound scancodes (docs/systems/input.md).
 
 ### 3.5 Game loop and timing
 
 - **[C]** Main in-game loop around VA 0x366C0–0x367B8. Per frame: game update/draw, `flip()` (VA 0x109E0), then **busy-wait until the PIT ISR sets `tick_flag`**, clear it, repeat. PIT frequency = the *Framerate* option (global 0x9D760, default **50**). Frame counter at 0x9D744 (FPS statistic reset every 200 frames).
-- **[H]** The simulation advances **exactly one fixed step per displayed frame** with no delta-time: raising "Framerate" speeds the whole game up (WINGS.DOC: "change the maximum speed of the game … default 50fps"), and a slow PC slows the game down rather than dropping frames. ⇒ **Canonical tick rate = 50 Hz**, fixed-step, which is ideal for deterministic reconstruction and server simulation. Must be verified by confirming no frame-time scaling in the ship update.
+- **[C]** (ship block disassembled: no delta-time, all per-tick constants) The simulation advances **exactly one fixed step per displayed frame** with no delta-time: raising "Framerate" speeds the whole game up (WINGS.DOC: "change the maximum speed of the game … default 50fps"), and a slow PC slows the game down rather than dropping frames. ⇒ **Canonical tick rate = 50 Hz**, fixed-step, which is ideal for deterministic reconstruction and server simulation. Must be verified by confirming no frame-time scaling in the ship update.
 - **[C]** Floating point is used in game code (~1,100 FPU instructions below VA 0x3A000), dominated by `fild/fimul/fistp` with explicit `fldcw` truncation → **mixed int/float arithmetic with truncating float→int conversions**. `sin`/`cos` are called from only ~7 sites (VA 0x340DA–0x3420C init region, 0x392B7–0x395FB) ⇒ **[H]** trig lookup tables built at startup; per-tick physics uses tables.
-- **[C]** RNG: game wrapper `random(n) = n > 0 ? rand() % n : 0` at VA 0x1AF48, **174 call sites**. `rand()` is DJGPP v2.01 libc (VA 0x4B0FC): BSD-style additive feedback generator with an LCG fallback (`x*0x41C64E6D + 0x3039`). Fully reproducible in modern code once seed source is found. **[?]** seeding (`srand` time-based?) and whether serial play synchronises the seed.
+- **[C]** RNG: game wrapper `random_n(n) = n > 0 ? random() % n : 0` at VA 0x1AF48, **174 call sites**. ~~`rand()` at 0x4B0FC~~ corrected: 0x4B0FC is libc **`random()`** (BSD additive feedback; `srandom` 0x4ADD4); libc `rand` is 0x4B188 and unused by random_n. **[C]** Seeding: `seed_rng` 0x1AF34 = `srandom(time(0))`; serial setup re-seeds with an exchanged short seed (0x1E388, 0x1E5EB) → lockstep-synchronised RNG.
 
 ### 3.6 Gameplay systems (what we know before reversing logic)
 
@@ -156,7 +156,7 @@ Project root contains two archives; both extracted (unchanged) to `original/`.
 - **Weapons [C] names / [H] fields:** 35 entries in `WEAPONS.DAT`:
   `Autofire, Dumbfire, Troopers, Ion cannon, Multicannon, Shotgun, Splinterbomb, Bomb, Mine, Missile, Freezer, Poison, Harpoon, Nucleus, Grenade launcher, Dirtball, Digger, Hellfire, Torpedo, Base, Cannon, Landmines, Rockets, Bats, Teleport, Gravitor, Plastic explosive, Watercannon, Fireworks, Bouncer, Net, Shield, Electric blast, Poison gas, Nuke`.
   Field hypotheses: f1 = fire mode (0 single, 1 continuous/beam, 2 troopers); f2 = reload/charge in ticks (Autofire 8, Nuke 700); f3 = shots/burst or energy; f4/f5 = magazine reload & count (Grenade launcher 250/5, Rockets 400/6, Landmines 350/8, Poison gas 450/4); f6 = effect duration (Poison 1000, Net 1000, Nuke 400); f7 = speed/range/spread (Dumbfire 150, Missile 130, Bouncer 150). **All [H]** — the EXE also hard-codes a partly different weapon-name list at VA ~0x2518B (includes "Teleport", "Gravitor"), so WEAPONS.DAT may only hold tunables.
-- **Ships [C] layout / [H] semantics:** 7 header values per ship, e.g. default: `(100, 1.0, 50, 0.06, 2000, 100, 1)`. Hypothesis: (int strength/HP, float mass, int thrust, float turn-rate rad/tick, int fuel/energy, int armour/size, int gun count 1–2). Compare `TIE-F (70, 0.7, 60, 0.09, 2000, 90, 1)` vs `hammer (150, 1.7, 54, 0.04, 1600, 150, 2)`: consistent with light-fast vs heavy-slow.
+- **Ships [C] layout / [H] semantics:** 7 header values per ship, e.g. default: `(100, 1.0, 50, 0.06, 2000, 100, 1)`. ~~Hypothesis: (int strength/HP, float mass, int thrust, float turn-rate rad/tick, int fuel/energy, int armour/size, int gun count 1–2).~~ **[C] from ship_type_t::load + player_spawn_init + ship update:** p0 strength % (HP scale), p1 mass (divides force impulses), p2 turn rate in 1/10° per tick, p3 thrust factor (× dir table ×1000), p4 max-speed box (milli-px/tick), p5 per-tick accumulator rate (effect [H]), p6 [?]. See re/types.h, docs/systems/physics.md. Compare `TIE-F (70, 0.7, 60, 0.09, 2000, 90, 1)` vs `hammer (150, 1.7, 54, 0.04, 1600, 150, 2)`: consistent with light-fast vs heavy-slow.
 - **Terrain [C]:** per-pixel destructible bitmap; material class = palette index range (§3.8). Burning, soft, explosive, indestructible, fire-damage, water (+ currents), snow, bubbles.
 - **Environment [C]:** random rain, snow, air bombing, civilians (optionally armed) per level probabilities.
 - **Pickups [?]:** no pickup strings found yet; weapons are chosen at bases. Troopers (rescuable/deployable) and civilians are the "entities" on the map.
@@ -340,10 +340,10 @@ Rule: `recon/core` has **no** platform or network dependencies and exposes `sim_
 | F2 | Trailer `u16 = 2` field | [H] version | Find the `.LEV` reader in WINGS.EXE (xref `\*.lev`, VA ~0x10B02) and confirm. |
 | F3 | How colours 0–47 are overridden; which palette entries animate (water, fire, bases per team colour) | [?] | Reverse level-load + palette code (ports 0x3C8/0x3C9). |
 | F4 | Spawn selection | [?] | Reverse match start: how bases/pixels are found; per-team rules. |
-| F5 | `.SHP` 7 params, 72-frame ordering | [H] | Reverse `ship_type_t::load()` (error string at VA ~0x86E8) and its users. |
+| F5 | `.SHP` 7 params, 72-frame ordering | ✅ [C] p0–p5, p6 [?] | Reverse `ship_type_t::load()` (error string at VA ~0x86E8) and its users. |
 | F6 | `WEAPONS.DAT` 8 fields; relation to hard-coded weapon table (VA ~0x2518B) | [H] | Reverse loader (string `weapons.dat` @ ~0x252C7) and weapon-fire dispatch. |
 | F7 | `WINGS.SND` sample rate & sample→event map | [?] | Reverse SB DSP time-constant programming + `play_sample(id)` call sites. |
-| F8 | `OPTIONS/PLAYERS/SHIPS/LEVELS/W_SELECT/SERIAL/MUSIC.DAT` | partial | Reverse each save routine (fwrite of globals) → field maps. |
+| F8 | `OPTIONS/PLAYERS/SHIPS/LEVELS/W_SELECT/SERIAL/MUSIC.DAT` | partial: PLAYERS.DAT [C] = {u32 ver=2, u32 n, i32 team[8], i32 kind[8], i32 show[8]}; LEVELS.DAT [C] = {u32 n, char name[n][12]} matched by strcmp to LEV dir list; SERIAL.DAT read at 0x17ECC | Reverse each save routine (fwrite of globals) → field maps. |
 | F9 | `WINGS.DAT` / `WINGS.REG` | [?] | Reverse loader; determine if it gates content. Low priority. |
 | F10 | AUTS level format | [?] | From LEVCONV.EXE (useful for importing AUTS maps; optional). |
 | F11 | `W_PICT/W_PICT2/W_WEAP` atlas sub-rectangles | [?] | Find blit calls with constant src rects. |
@@ -392,24 +392,24 @@ Rule: a system is **done** only when its differential test passes (P2 harness).
 - [ ] Atlas sub-rects for W_PICT/W_PICT2/W_WEAP
 
 ### 9.2 RE baseline
-- [ ] Ghidra project created, COFF loaded, `.text`/`.data`/`.bss` mapped at correct VAs
-- [ ] DJGPP 2.01 libc/libemu/libgpp FunctionID signatures built & applied
-- [ ] Known anchors named: `timer_isr` 0x220E0, `timer_install` 0x22124, `set_mode13` 0x10570, `set_textmode` 0x1058C, `vsync_flip` 0x109A4, `flip` 0x109E0, `random_n` 0x1AF48, libc `rand` 0x4B0FC, `tick_flag` 0x769F0, `tick_count` 0x769F4, `framerate` 0x9D760, `frame_counter` 0x9D744
-- [ ] Main in-game loop (≈0x366C0) fully annotated; call tree to depth 3
+- [x] Ghidra project created, COFF loaded, `.text`/`.data`/`.bss` mapped at correct VAs (Ghidra 12.1.4 headless, `re/ghidra/`)
+- [~] Runtime labelled by exact masked-byte object matching (stricter than FunctionID): crt0, libemu 2/2, libc 160 objects, 290 names → `re/runtime_symbols.csv`. **libgcc/libg++ 2.7.2.1 not obtainable** (gcc2721b.zip / lgp271b.zip removed from the DJGPP archive, not on Wayback) → still unlabelled.
+- [x] Known anchors named: `timer_isr` 0x220E0, `timer_install` 0x22124, `set_mode13` 0x10570, `set_textmode` 0x1058C, `vsync_flip` 0x109A4, `flip` 0x109E0, `random_n` 0x1AF48, libc `rand` 0x4B0FC, `tick_flag` 0x769F0, `tick_count` 0x769F4, `framerate` 0x9D760, `frame_counter` 0x9D744
+- [~] Main in-game loop annotated (match_main 0x34B2C: input, inlined ship update, render, ~90 world calls still unnamed); ship-update call tree done
 - [ ] `.data` layout map (pools, arrays, sizes)
 - [ ] String-xref table for all game strings
 
 ### 9.3 Ground truth
-- [ ] DOSBox-X debugger set up with Wings, sound off (`-S0`) for determinism
-- [ ] Memory-dump script (per tick) + JSON converter
+- [x] DOSBox-X (MinGW32 build, 80-bit FPU) running Wings `-S0`, menu driven by `autotype`
+- [x] Per-tick dump: patched copy (`tools/make_trace_exe.py`) → RAM records → DOSBox-X `memory file=` → `tools/trace_extract.py` JSON
 - [ ] RNG seed forcing (patch `srand` arg or set state) for reproducible runs
-- [ ] Input injection / replay
+- [~] Input injection: hook writes SCRIPT.BIN bytes into the key table per frame (built, not yet exercised)
 
 ### 9.4 Systems (each: spec doc → recon impl → differential test)
-- [ ] Timing / main loop (50 Hz fixed step confirmed)
+- [x] Timing / main loop (50 Hz fixed step confirmed by disasm) [C]
 - [ ] RNG usage per system
 - [ ] Trig tables
-- [ ] Ship physics (thrust/rotate/gravity/drag)
+- [~] Ship physics (thrust/rotate/gravity/drag): spec written (docs/systems/physics.md), recon + diff test pending
 - [ ] Terrain collision & landing
 - [ ] Bases (repair, weapon switch, win condition)
 - [ ] Damage / ship strength / death / respawn
@@ -449,6 +449,10 @@ Rule: a system is **done** only when its differential test passes (P2 harness).
 | Missing referenced files (`JANUSKI.S3M`, `W_SLIDE.LEV`) | Minor; confirm game tolerates | Note only |
 | DOSBox-X determinism (timer, SB IRQ) | Flaky traces | Run with `-S0`, fixed cycles, seed forcing |
 | **Legal**: Wings is freeware but © Miika Virpioja; music by third parties | Distribution of assets/port | Keep original assets user-supplied (loader reads user's copy); reconstructed code is original work; try to contact the author for blessing/licence before public release |
+| **DOSBox-X FPU precision** | MSVC x64 build uses 64-bit long double → drag `trunc(0.995*v)` differs from real x87 whenever v%200==0 | Traces from the MinGW32 build; recon implements exact 64-bit-mantissa rounding; verify on traces |
+| **DJGPP stdio writes in-match run away** | Trace file grew >1 GB/s of zeros (root cause [?]) | No file writes from hooks; RAM records + DOSBox-X `memory file` |
+| libgcc/libg++ 2.7.2.1 archives unavailable | Part of 0x3A000–0x475A0 unlabelled | Other mirrors / rebuild from gcc 2.7.2.1 source |
+| Level-size globals 0x9AE00/0x9AE04 read 800×150 at frame 1 on LEGO (400×400) | Wrong clamp/bounds assumptions | Check writer at 0x345E7 [?] |
 | Scope creep toward MP before reconstruction is verified | Loss of authenticity | Hard gate: MP work uses only [C]-marked systems |
 
 Unknowns list: viewport size per player count; exact spawn logic; AI; pickups existence; sample rate; serial protocol; `.SHP`/`WEAPONS.DAT` semantics; how deathmatch respawn location is chosen; whether any global uses delta-time.
@@ -517,6 +521,16 @@ Steps:
 
 Acceptance: `ship_step()` reproduces the original's position/velocity/angle for ≥ 500 consecutive ticks (10 s) across the three input scripts, with any float tolerance explicitly justified.
 
+### RE-1 status (2026-09-23, paused at user request)
+Done: git repo (published as **OpenWINGS**); Ghidra 12.1.4 + JDK 21 + DOSBox-X (MSVC and MinGW32) installed portably in `D:\programs\re`; COFF import + `ApplySymbols.java`/`ExportAll.java`; runtime labelled (290 names); ship update located (inlined in `match_main`); `player_t`/`ship_type_t` recovered (`re/types.h`); gravity/drag/Options constants; input path; RNG seeding; 157×90 viewport and 50 Hz fixed step confirmed; trace harness working; first trace `re/traces/lego_noinput_dosbox_mingw32.json` (684 ticks, gravity-only fall, first ticks hand-checked).
+
+Next steps to finish RE-1:
+1. Capture thrust-only / rotate-only traces with SCRIPT.BIN (harness supports it).
+2. Implement `recon/core/ship.c` `ship_step()` (physics.md steps 1–8, 12–13; forces/collision stubbed for air-only ticks) with an exact `x87_mul_trunc`; compiler: `python -m ziglang cc` (installed).
+3. Diff test vs traces (air-only windows); test both rounding models on v%200==0 ticks.
+4. Resolve the 0x9AE00 level-size anomaly; name remaining match_main callees (depth 3).
+Then RE-2: terrain collision/landing (`player_terrain_collide` 0x37D94, single-pixel test, already read).
+
 ---
 
 ## Appendix A — Key addresses discovered so far
@@ -537,10 +551,28 @@ Acceptance: `ship_step()` reproduces the original's position/velocity/angle for 
 | ~0x2518B | hard-coded weapon name strings | strings [C] |
 | 0x34868 | call `timer_install(framerate)` at match start | disasm [C] |
 | 0x366C0–0x367B8 | in-game frame loop; FPS calc; busy-wait on `tick_flag` | disasm [C] |
-| 0x4A684 | libc `movedata` | [H] |
+| 0x4A684 | libc `movedata` (jmp stub to 0x4CA20) | [H] |
 | 0x4A698 | libc `__dpmi_int` | [H] |
 | 0x4A744 / 0x4A758 | `_go32_dpmi_get/set_protected_mode_interrupt_vector` | [H] |
-| 0x4B0FC | libc `rand` (BSD random / LCG 0x41C64E6D,0x3039) | disasm [C] |
+| 0x4B0FC | libc `random` (~~rand~~, corrected) | lib match [C] |
+| 0x08F04 | `ship_type_t::load()` | disasm [C] |
+| 0x0903C | `ship_speed(p)` = trunc(floor(20·sqrt((vx/2000)²+(vy/2000)²))) | disasm [C] |
+| 0x0909C | `player_spawn_init(p,x,y,hp)` copies ship params | disasm [C] |
+| 0x092D8 | `player_apply_confusion` | disasm [C] |
+| 0x0947C | `player_cycle_weapon` | disasm [C] |
+| 0x0B92C | dead function (845 B), used as trace-hook cave | xref scan [C] |
+| 0x1AF34 | `seed_rng` = srandom(time(0)) | disasm [C] |
+| 0x34B2C | `match_main` (frame loop + inlined ship update) | disasm [C] |
+| 0x3691C / 0x36F18 / 0x37D94 | player_apply_forces / apply_damage / terrain_collide | disasm [C] |
+| 0x3987C / 0x39FD8 | material_class / level_get_pixel | disasm [C] |
+| 0x475A0 | start of DJGPP libc (crt1.o) | lib match [C] |
+| 0x491F4 / 0x491FC | sqrt / floor | disasm [C] |
+| 0x4B188 | libc `rand` (not used by random_n) | lib match [C] |
+| 0x5E3D4 / 0x5E4D4 | key table live / per-frame snapshot | disasm [C] |
+| 0x9AB74..0x9AB80 | g_gravity, g_air_drag_f, opt_gravity_pct, opt_air_res_pct | disasm [C] |
+| 0x9B434 / 0x9B444 | g_ship_types* / g_players[8] (0x128 each) | disasm [C] |
+| 0x9BD84 / 0x9BD88 | current player index / player count | disasm [C] |
+| 0x9BD8C / 0x9BFCC | dir tables int[72][2], int[360][2] | disasm + trace [C] |
 | 0x4BA8C / 0x4BAA8 | libm `cos` / `sin` | disasm [C] |
 | 0x5F104 | serial/SB I/O base port variable | disasm [H] |
 | 0x769F0 / 0x769F4 | `tick_flag` / `tick_count` | disasm [C] |
