@@ -1,0 +1,16 @@
+# originals and generated assets (never committed)
+original/
+extracted/
+*.zip
+# Ghidra project binaries
+re/ghidra/*.gpr
+re/ghidra/*.rep/
+re/ghidra/*.lock*
+re/ghidra/project/
+# third-party downloads / build outputs
+third_party/
+build/
+__pycache__/
+*.o
+*.exe
+!tools/**/*.py
