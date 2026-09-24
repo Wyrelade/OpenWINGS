@@ -52,18 +52,19 @@ typedef struct {
     int32_t key_left;         /* +0x98 [C] angle10 -= turn_rate */
     int32_t key_right;        /* +0x9C [C] angle10 += turn_rate */
     int32_t key_fire1;        /* +0xA0 [C] (default RShift) */
-    int32_t base_repair_ctr;  /* +0xA4 [C] every 10 ticks on own base: hp += g_repair (0x9EAE8) */
-    uint8_t on_own_base;      /* +0xA8 [C] */
-    uint8_t on_any_base;      /* +0xA9 [C] */
+    int32_t base_repair_ctr;  /* +0xA4 [C] every 10th tick with on_own_base: hp += g_repair (0x9EAE8), max hp_max */
+    uint8_t on_own_base;      /* +0xA8 [C] landed on a neutral (32-37) or own-team base: repair; set by collide */
+    uint8_t on_any_base;      /* +0xA9 [C] landed on an indestructible base (38-39): no repair. Either flag blocks rotation */
     uint8_t _padaa[2];
-    int32_t material;         /* +0xAC [?] written by player_terrain_collide; stays 0 on landing ticks in traces */
+    int32_t material;         /* +0xAC [C] material_class of the next pixel after collide (only writer 0x38570); 3 = in water */
     uint8_t exhaust_toggle;   /* +0xB0 [C] ^=1 each tick; exhaust spawned on toggle==1 while thrusting */
     uint8_t _padb1[0x13];
     int8_t  weapon_cycle_dir; /* +0xC4 [C] */
     uint8_t autofire_ctr;     /* +0xC5 [C] */
-    uint8_t carried;          /* +0xC6 [H] grabbed/netted flag (cleared by collisions) */
+    uint8_t carried;          /* +0xC6 [H] grabbed/netted flag (cleared by every terrain contact and the bounds clamp) */
     uint8_t _padc7;
-    int32_t u_c8, u_cc, u_d0; /* +0xC8.. [?] mission counters? */
+    int32_t u_c8;             /* +0xC8 [?] reduced by damage/4 while carried */
+    int32_t u_cc, u_d0;       /* [?] */
     int32_t push_timer;       /* +0xD4 [C] >0: gravity replaced by push_v (force kind 3) */
     int32_t push_vx, push_vy; /* +0xD8 [C] decays toward (0, 12) */
     int32_t u_e0, u_e4;       /* [?] */
@@ -75,13 +76,14 @@ typedef struct {
     int32_t p5_rate;          /* +0xFC [C] copy of p5 */
     int32_t p5_acc;           /* +0x100 [C] */
     int32_t score;            /* +0x104 [C] deathmatch kills */
-    int32_t u_108;            /* +0x108 [?] reduces damage by 15 when 1 (shield?) */
+    int32_t u_108;            /* +0x108 [C] ==1: damage - 15 and no background-fire damage [H: shield] */
     int32_t confuse_timer;    /* +0x10C [C] */
     int32_t confuse_kind;     /* +0x110 [C] 0 swap L/R, 1 swap L/thrust, 2 swap thrust/R, 3 random thrust drop, 4 force fire2 */
     int32_t damage_acc;       /* +0x114 [C] applied+cleared in player_apply_damage */
     int32_t last_attacker;    /* +0x118 [C] 100 = none */
     int32_t attacker_age;     /* +0x11C [C] resets attacker after 40 ticks */
-    int32_t u_120, u_124;     /* [?] */
+    int32_t u_120;            /* +0x120 [H] attacker credited while carried/pushed (last grabber) */
+    int32_t u_124;            /* [?] */
 } player_t;
 
 #endif

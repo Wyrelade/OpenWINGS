@@ -6,8 +6,9 @@ va,name,kind,confidence,notes
 0x0000903C,ship_speed,func,C,"trunc(floor(20*sqrt((vx/2000f)^2+(vy/2000f)^2))) = speed in 1/100 px/tick; verified recon/core/ship.c (dive trace)"
 0x0000909C,player_spawn_init,func,C,"(player*, x, y, hp): reset player state, copy ship params p0..p5 to +0xE8..+0xFC"
 0x000092D8,player_apply_confusion,func,C,"control-scramble status effect: timer +0x10C, kind +0x110 swaps key flags"
-0x00009388,player_on_base,func,H,called when standing on base pixel
+0x00009388,player_on_base,func,C,"snap angle: material==3 -> 180 (zero v/sub if not already 180), else push_vy<0 ? 180 : 0; angle10=angle*10"
 0x0000947C,player_cycle_weapon,func,C,"cycle secondary weapon +0x38 by dir, skip unavailable (+0x40[w]==0), 1..34"
+0x0000E83C,splash,func,C,"splash(x,y,speed): sound +0x168, speed/4 particles in pool 0x59AA0 (40), 2x random_n(36) each"
 0x0000FFFC,snd_loop_frame_begin,func,H,clears looping-sound keepalive flags
 0x00010020,snd_loop_frame_end,func,H,stops looping sounds not kept alive this tick
 0x00010570,set_mode13,func,C,__dpmi_int(0x10) AX=0x13
@@ -16,6 +17,7 @@ va,name,kind,confidence,notes
 0x000109E0,flip,func,H,called every frame in main loop
 0x0001AF34,seed_rng,func,C,srandom(time(0))
 0x0001AF48,random_n,func,C,"n>0 ? random()%n : 0 (174 callers)"
+0x0001FC80,sound_play,func,H,"(sample*, prio, 0, vol): channel allocator over 0x605C0 channels, no RNG"
 0x000220E0,timer_isr,func,C,tick_flag=1; tick_count++; EOI
 0x00022124,timer_install,func,C,divisor=min(1193180.0/hz;65535)
 0x000233F8,player_fire,func,H,"fire(kind): 1=primary? 2=secondary?"
@@ -24,10 +26,17 @@ va,name,kind,confidence,notes
 0x00036840,serial_send_local_keys,func,H,packs 5 key flags into char+0x20
 0x000368AC,serial_read_remote_keys,func,H,remote player key byte
 0x0003691C,player_apply_forces,func,C,"iterate force list 0x76A20; v += trunc(f*dir/mass)"
-0x00036F18,player_apply_damage,func,C,"apply accumulated damage +0x114, kill, deathmatch score"
-0x00037D94,player_terrain_collide,func,C,"single-pixel material test at next position; water/solid/base handling"
+0x00036F18,player_apply_damage,func,C,"apply damage_acc: attacker resolve, shield -15, flash (0x1F, timer=max(timer,d), >=2), hp -= d, player_die"
+0x00037A58,player_die,func,H,"(x, y, idx): death effects + respawn; uses random_n"
+0x00037D84,k_water_drag,data,C,"double 0.952 (player_terrain_collide, water)"
+0x00037D8C,k_special_drag,data,C,"double 0.65 (player_terrain_collide, class 8 / snow)"
+0x00037D94,player_terrain_collide,func,C,"single-pixel material test at next position: air/fire, water+current (0.952), class 8 (0.65), solid halve+damage+axis test, base landing, material, rest-on-base, repair"
+0x000386D4,attacker_lookup,func,H,"(idx): grab/net pools 0x994A0 (40 B) / 0x99638 (92 B) -> attacker index or -1"
 0x0003987C,material_class,func,C,"palette index -> class 0..8 (0 air: 0/54/64-79, 1 solid: rest, 2 base 32-47, 3 water 48-51, 4 indestr 80-95, 5 base-indestr 38-39, 6 soft 96-111, 7 burning 112-127, 8: 6/17-20/53 [?]); ported recon/core/material.c"
+0x00039A00,base_owner,func,C,"base colour -> 0..3 team (40-47), 5 indestructible (38-39), 4 neutral"
+0x00039A50,water_current,func,C,"49 -> 1 down, 50 -> 2 left, 51 -> 3 right, else 0"
 0x00039FD8,level_get_pixel,func,C,"bounds-checked level pixel (w=0x9AE00,h=0x9AE04,pitch=0x9974C,base=0x99754)"
+0x0003A01C,level_set_pixel,func,C,"bounds-checked pixel write; mask 0x9B410 = c?0xFF:0 when byte 0x9AB9B == 1"
 0x000491F4,sqrt,func,C,"fld qword [esp+4]; fsqrt; ret (libm, not in djdev201 libc)"
 0x000491FC,floor,func,C,"RC=down frndint"
 0x0004A684,movedata,func,H,libc
@@ -48,6 +57,7 @@ va,name,kind,confidence,notes
 0x0009AB80,opt_air_res_pct,data,C,"Rules/Air resistance percent 0..1000 (default 100 -> double 0.995; 0 -> none)"
 0x0009AB8C,opt_ship_strength_pct,data,C,"HP = pct*120/100 * p0/100"
 0x0009ABA8,g_player_kind,data,C,"per player: 1 human local, 2 computer, 3 remote"
+0x0009AC10,opt_deathmatch,data,H,"deathmatch flag (player_apply_damage kill scoring)"
 0x0009AE00,g_level_w,data,C,level width
 0x0009AE04,g_level_h,data,C,level height
 0x0009B434,g_ship_types,data,C,ship_type_t* array (900 bytes each)
@@ -58,3 +68,4 @@ va,name,kind,confidence,notes
 0x0009BFCC,g_dir360,data,C,"int[360][2] {cos,sin}*1000 for 270+k deg (rad = deg*0.017453)"
 0x0009D744,frame_counter,data,H,FPS statistic reset every 200 frames
 0x0009D760,g_framerate,data,C,PIT Hz option (default 50)
+0x0009EAE8,g_repair,data,C,"hp per 10 ticks on own base = max(1, opt_ship_strength_pct/100)"

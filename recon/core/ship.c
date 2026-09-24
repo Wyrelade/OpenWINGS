@@ -56,7 +56,7 @@ void ship_step_pre(ship_t *s, const ship_keys_t *k, const ship_world_t *w, ship_
         thrust(s, w);
     /* 3. fire keys: weapons, not reconstructed */
     /* 4. rotation; on a base the turn keys cycle the secondary weapon instead */
-    if (!s->on_base) {
+    if (!(s->on_own_base || s->on_any_base)) {
         if (k->right) rotate(s, 1);
         if (k->left) rotate(s, -1);
     }

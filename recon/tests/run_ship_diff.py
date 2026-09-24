@@ -3,12 +3,12 @@
 
 1. x87_check: recon/core/x87.c vs tools/ship_model.py on edge cases + random inputs
    (ship_speed incl. exact-integer boundaries, drag multiply incl. v % 200 == 0).
-2. ship_diff: replay re/traces/lego_{noinput,thrust,rotate,mixed,dive}_dosbox_mingw32.json.
-   thrust and mixed must match for >= 500 consecutive air ticks; noinput and rotate reach the
-   ground after ~126 ticks and dive (ship_speed limit active on its last 15 air ticks) after 85,
-   so those must match every air tick up to the landing.
+2. ship_diff: replay every trace in TRACES (re/traces/<name>_dosbox_mingw32.json) through
+   ship.c + terrain.c free-running, including landings, resting/bouncing on the ground, bases and
+   water.  Every tick of every trace must match (position, velocity, angle, p5, hp, flash,
+   damage_acc, base flags, material, repair counter, attacker fields).
 
-Needs the user's copy of LEGO.LEV (re/work/wings/LEV/ or original/wings140/LEV/).
+Needs the user's copy of the levels (re/work/wings/LEV/, re/work/LEV_hidden/, original/*/).
 usage: python recon/tests/run_ship_diff.py
 """
 import json
@@ -26,11 +26,15 @@ from lev_parse import parse  # noqa: E402
 BUILD = os.path.join(ROOT, 'build', 'recon')
 CORE = ['recon/core/x87.c', 'recon/core/ship.c', 'recon/core/material.c']
 CFLAGS = ['-std=c99', '-O2', '-Wall', '-Wextra', '-pedantic', '-Werror']
-TRACES = ['noinput', 'thrust', 'rotate', 'mixed', 'dive']
-MIN_TICKS = {'noinput': 120, 'rotate': 120, 'thrust': 500, 'mixed': 500, 'dive': 80}
+CORE += ['recon/core/terrain.c']
+TRACES = ['lego_noinput', 'lego_thrust', 'lego_rotate', 'lego_mixed', 'lego_dive']
+# must equal FIELD_NAMES in ship_diff.c
 FIELDS = ['frame', 'x', 'y', 'xsub', 'ysub', 'vx', 'vy', 'angle10', 'angle_deg', 'p5_acc',
-          'key_thrust', 'key_left', 'key_right', 'on_base', 'flash_timer', 'push_timer',
-          'push_vx', 'push_vy', 'exhaust_toggle', 'carried', 'hp']
+          'hp', 'flash_timer', 'damage_acc', 'on_own_base', 'on_any_base', 'material',
+          'base_repair_ctr', 'last_attacker', 'attacker_age', 'carried', 'flash_color',
+          'key_thrust', 'key_left', 'key_right', 'push_timer', 'push_vx', 'push_vy', 'exhaust_toggle',
+          'hp_max', 'team', 'u_108', 'u_120', 'u_c8', 'flash_color_restore']
+LEV_DIRS = ['re/work/wings/LEV', 're/work/LEV_hidden', 'original/wings140/LEV', 'original/wingslev']
 
 
 def cc(src, out):
@@ -44,11 +48,12 @@ def fbits(v):
     return struct.unpack('<I', struct.pack('<f', v))[0]
 
 
-def find_lego():
-    for p in ('re/work/wings/LEV/LEGO.LEV', 'original/wings140/LEV/LEGO.LEV'):
-        if os.path.exists(os.path.join(ROOT, p)):
-            return os.path.join(ROOT, p)
-    sys.exit('LEGO.LEV not found (user-supplied original data)')
+def find_level(name):
+    for d in LEV_DIRS:
+        p = os.path.join(ROOT, d, name)
+        if os.path.exists(p):
+            return p
+    sys.exit(f'{name} not found (user-supplied original data)')
 
 
 def x87_check(exe):
@@ -72,33 +77,38 @@ def x87_check(exe):
     return bad == 0
 
 
-def export(name, lev_bin):
-    t = json.load(open(os.path.join(ROOT, 're', 'traces', f'lego_{name}_dosbox_mingw32.json')))
+def export(name):
+    t = json.load(open(os.path.join(ROOT, 're', 'traces', f'{name}_dosbox_mingw32.json')))
     g, st = t['globals'], t['ship_type']
-    assert (g.get('level_match') or '').startswith('LEGO.LEV'), g
+    lvname, score = (g.get('level_match') or ':0').split(':')
+    assert float(score) > 0.95, (name, g.get('level_match'))
+    p0 = t['ticks'][0]['player']
+    # g_repair = max(1, opt_ship_strength_pct / 100); hp_max = strength*120/100 * p0/100
+    assert p0['hp_max'] == 120 * st['p0_strength'] // 100, 'ship strength option is not 100%'
+    repair = 1
     lines = [f"{g['level_w']} {g['level_h']} {g['g_gravity']} {g['opt_air_res_pct']} "
              f"{fbits(g['g_air_drag_f']):x} {fbits(st['p3_thrust']):x} {st['p2_turn']} "
-             f"{st['p4_maxspeed']} {st['p5_rate']}",
-             ' '.join(f'{c} {s}' for c, s in t['dir72']), str(len(t['ticks']))]
+             f"{st['p4_maxspeed']} {st['p5_rate']} {repair}",
+             ' '.join(f'{c} {s}' for c, s in t['dir72']), ' '.join(FIELDS), str(len(t['ticks']))]
     for r in t['ticks']:
         p = dict(r['player'], frame=r['frame'])
-        p['on_base'] = 1 if (p['on_own_base'] or p['on_any_base']) else 0
         lines.append(' '.join(str(p[f]) for f in FIELDS))
     path = os.path.join(BUILD, f'{name}.txt')
     open(path, 'w').write('\n'.join(lines) + '\n')
-    return path
+    lv = parse(find_level(lvname))
+    assert (lv['w'], lv['h']) == (g['level_w'], g['level_h'])
+    lev_bin = os.path.join(BUILD, f'{name}.lev.bin')
+    open(lev_bin, 'wb').write(lv['pixels'])
+    return path, lev_bin
 
 
 def main():
     os.makedirs(BUILD, exist_ok=True)
     ok = x87_check(cc('recon/tests/x87_check.c', 'x87_check'))
     diff = cc('recon/tests/ship_diff.c', 'ship_diff')
-    lv = parse(find_lego())
-    lev_bin = os.path.join(BUILD, 'LEGO.bin')
-    open(lev_bin, 'wb').write(lv['pixels'])
     for name in TRACES:
         print(f'== {name}', flush=True)
-        r = subprocess.run([diff, export(name, lev_bin), lev_bin, str(MIN_TICKS[name])])
+        r = subprocess.run([diff, *export(name), 'all'])
         ok &= r.returncode == 0
     print('PASS' if ok else 'FAIL')
     sys.exit(0 if ok else 1)

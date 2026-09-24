@@ -1,32 +1,47 @@
-/* Differential test: replay a DOSBox-X trace of the original through recon/core/ship.c.
+/* Differential test: replay a DOSBox-X trace of the original through recon/core (ship.c + terrain.c).
  *
  * The ship is simulated free-running from the trace's first record (no resync), using the key
- * flags the original recorded for each tick.  The run stops at the first tick whose collision
- * pixel is not air (player_terrain_collide is RE-2), or at the first field mismatch.
+ * flags the original recorded for each tick.  Per tick: ship_step_pre, player_terrain_collide,
+ * player_apply_damage, ship_step_post (player_apply_forces is not reconstructed; the run stops
+ * if the original shows a push/force the recon cannot know about, i.e. at the first mismatch).
  * Also lists every tick where the velocity entering the drag step is a non-zero multiple of 200:
  * there a 53-bit double product gives a different answer than the x87's 64-bit mantissa.
  *
  * Fixture format (written by run_ship_diff.py from the re/traces JSON files):
- *   W H gravity air_pct drag_f_bits(hex) thrust_bits(hex) turn_rate max_speed p5_rate
+ *   W H gravity air_pct drag_f_bits(hex) thrust_bits(hex) turn_rate max_speed p5_rate repair
  *   144 ints: dir72
- *   N, then N lines: frame x y xsub ysub vx vy angle10 angle_deg p5_acc key_thrust key_left
- *                    key_right on_base flash_timer push_timer push_vx push_vy exhaust_toggle
- *                    carried hp
- * Level file: W*H raw palette indices.
+ *   NF field names (must equal FIELD_NAMES below)
+ *   N, then N lines of NF ints
+ * Level file: W*H raw palette indices (mutable copy: landing may erase base pixels).
  *
- * usage: ship_diff <fixture.txt> <level.bin> [min_ticks]   exit 0 if >= min_ticks matched */
+ * usage: ship_diff <fixture.txt> <level.bin> [min_ticks|all]
+ *   exit 0 if >= min_ticks matched ("all" = every tick of the trace) */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 #include "../core/ship.h"
+#include "../core/terrain.h"
 #include "../core/material.h"
 #include "../core/x87.h"
 
-typedef struct {
-    long frame, x, y, xsub, ysub, vx, vy, angle10, angle_deg, p5_acc;
-    long key_thrust, key_left, key_right, on_base, flash_timer, push_timer, push_vx, push_vy;
-    long exhaust_toggle, carried, hp;
-} rec_t;
+enum {
+    F_FRAME, F_X, F_Y, F_XSUB, F_YSUB, F_VX, F_VY, F_ANGLE10, F_ANGLE_DEG, F_P5_ACC,
+    F_HP, F_FLASH_TIMER, F_DAMAGE_ACC, F_ON_OWN_BASE, F_ON_ANY_BASE, F_MATERIAL,
+    F_BASE_REPAIR_CTR, F_LAST_ATTACKER, F_ATTACKER_AGE, F_CARRIED, F_FLASH_COLOR,
+    F_KEY_THRUST, F_KEY_LEFT, F_KEY_RIGHT, F_PUSH_TIMER, F_PUSH_VX, F_PUSH_VY, F_EXHAUST_TOGGLE,
+    F_HP_MAX, F_TEAM, F_SHIELD, F_U_120, F_U_C8, F_FLASH_COLOR_RESTORE, NF
+};
+static const char *FIELD_NAMES[NF] = {
+    "frame", "x", "y", "xsub", "ysub", "vx", "vy", "angle10", "angle_deg", "p5_acc",
+    "hp", "flash_timer", "damage_acc", "on_own_base", "on_any_base", "material",
+    "base_repair_ctr", "last_attacker", "attacker_age", "carried", "flash_color",
+    "key_thrust", "key_left", "key_right", "push_timer", "push_vx", "push_vy", "exhaust_toggle",
+    "hp_max", "team", "u_108", "u_120", "u_c8", "flash_color_restore"
+};
+/* fields compared every tick (F_FRAME+1 .. F_FLASH_COLOR) */
+#define NCMP (F_FLASH_COLOR + 1)
+
+typedef struct { long v[NF]; } rec_t;
 
 static float bits_to_float(unsigned long b)
 {
@@ -38,49 +53,72 @@ static float bits_to_float(unsigned long b)
 
 static void load_ship(ship_t *s, const rec_t *r, float thrust, long turn, long maxs, long p5)
 {
+    const long *v = r->v;
     memset(s, 0, sizeof *s);
-    s->x = r->x; s->y = r->y; s->xsub = r->xsub; s->ysub = r->ysub;
-    s->vx = r->vx; s->vy = r->vy; s->angle10 = r->angle10; s->angle_deg = r->angle_deg;
-    s->p5_acc = r->p5_acc; s->flash_timer = r->flash_timer; s->push_timer = r->push_timer;
-    s->push_vx = r->push_vx; s->push_vy = r->push_vy; s->exhaust_toggle = (uint8_t)r->exhaust_toggle;
-    s->carried = (uint8_t)r->carried; s->on_base = (uint8_t)r->on_base; s->hp = r->hp;
+    s->x = v[F_X]; s->y = v[F_Y]; s->xsub = v[F_XSUB]; s->ysub = v[F_YSUB];
+    s->vx = v[F_VX]; s->vy = v[F_VY]; s->angle10 = v[F_ANGLE10]; s->angle_deg = v[F_ANGLE_DEG];
+    s->p5_acc = v[F_P5_ACC]; s->flash_timer = v[F_FLASH_TIMER];
+    s->flash_color = (uint8_t)v[F_FLASH_COLOR]; s->flash_color_restore = (uint8_t)v[F_FLASH_COLOR_RESTORE];
+    s->push_timer = v[F_PUSH_TIMER]; s->push_vx = v[F_PUSH_VX]; s->push_vy = v[F_PUSH_VY];
+    s->exhaust_toggle = (uint8_t)v[F_EXHAUST_TOGGLE]; s->carried = (uint8_t)v[F_CARRIED];
+    s->on_own_base = (uint8_t)v[F_ON_OWN_BASE]; s->on_any_base = (uint8_t)v[F_ON_ANY_BASE];
+    s->hp = v[F_HP]; s->hp_max = v[F_HP_MAX]; s->team = v[F_TEAM]; s->material = v[F_MATERIAL];
+    s->base_repair_ctr = v[F_BASE_REPAIR_CTR]; s->damage_acc = v[F_DAMAGE_ACC];
+    s->last_attacker = v[F_LAST_ATTACKER]; s->attacker_age = v[F_ATTACKER_AGE];
+    s->shield = v[F_SHIELD]; s->u_120 = v[F_U_120]; s->u_c8 = v[F_U_C8];
     s->thrust = thrust; s->turn_rate = turn; s->max_speed = maxs; s->p5_rate = p5;
+}
+
+static void save_ship(const ship_t *s, long *v)
+{
+    v[F_X] = s->x; v[F_Y] = s->y; v[F_XSUB] = s->xsub; v[F_YSUB] = s->ysub;
+    v[F_VX] = s->vx; v[F_VY] = s->vy; v[F_ANGLE10] = s->angle10; v[F_ANGLE_DEG] = s->angle_deg;
+    v[F_P5_ACC] = s->p5_acc; v[F_HP] = s->hp; v[F_FLASH_TIMER] = s->flash_timer;
+    v[F_DAMAGE_ACC] = s->damage_acc; v[F_ON_OWN_BASE] = s->on_own_base;
+    v[F_ON_ANY_BASE] = s->on_any_base; v[F_MATERIAL] = s->material;
+    v[F_BASE_REPAIR_CTR] = s->base_repair_ctr; v[F_LAST_ATTACKER] = s->last_attacker;
+    v[F_ATTACKER_AGE] = s->attacker_age; v[F_CARRIED] = s->carried; v[F_FLASH_COLOR] = s->flash_color;
 }
 
 int main(int argc, char **argv)
 {
     FILE *f;
-    long W, H, grav, air, turn, maxs, p5, n, i, j, matched = 0, rounding_ticks = 0;
-    long double_would_fail = 0, min_ticks = argc > 3 ? atol(argv[3]) : 500;
+    long W, H, grav, air, turn, maxs, p5, repair, n, i, j, matched = 0, rounding_ticks = 0;
+    long double_would_fail = 0, min_ticks, first_contact = -1, contacts = 0;
+    long splashes = 0, hits = 0, base_ticks = 0, water_ticks = 0, cleared = 0, fire = 0;
     unsigned long drag_bits, thrust_bits;
     int32_t dir72[72][2];
     rec_t *t;
     unsigned char *lev;
     ship_t s;
     ship_world_t w;
+    level_t L;
     const char *stop = "end of trace";
+    char name[64];
 
-    if (argc < 3) { fprintf(stderr, "usage: ship_diff fixture level [min]\n"); return 2; }
+    if (argc < 3) { fprintf(stderr, "usage: ship_diff fixture level [min|all]\n"); return 2; }
     f = fopen(argv[1], "r");
     if (!f) { perror(argv[1]); return 2; }
-    if (fscanf(f, "%ld %ld %ld %ld %lx %lx %ld %ld %ld", &W, &H, &grav, &air, &drag_bits,
-               &thrust_bits, &turn, &maxs, &p5) != 9) return 2;
+    if (fscanf(f, "%ld %ld %ld %ld %lx %lx %ld %ld %ld %ld", &W, &H, &grav, &air, &drag_bits,
+               &thrust_bits, &turn, &maxs, &p5, &repair) != 10) return 2;
     for (i = 0; i < 72; i++) {
         long c, sn;
         if (fscanf(f, "%ld %ld", &c, &sn) != 2) return 2;
         dir72[i][0] = (int32_t)c; dir72[i][1] = (int32_t)sn;
     }
+    for (j = 0; j < NF; j++) {
+        if (fscanf(f, "%63s", name) != 1 || strcmp(name, FIELD_NAMES[j]) != 0) {
+            fprintf(stderr, "fixture field %ld: want %s\n", j, FIELD_NAMES[j]);
+            return 2;
+        }
+    }
     if (fscanf(f, "%ld", &n) != 1 || n < 2) return 2;
     t = calloc((size_t)n, sizeof *t);
-    for (i = 0; i < n; i++) {
-        rec_t *r = &t[i];
-        if (fscanf(f, "%ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld %ld",
-                   &r->frame, &r->x, &r->y, &r->xsub, &r->ysub, &r->vx, &r->vy, &r->angle10,
-                   &r->angle_deg, &r->p5_acc, &r->key_thrust, &r->key_left, &r->key_right,
-                   &r->on_base, &r->flash_timer, &r->push_timer, &r->push_vx, &r->push_vy,
-                   &r->exhaust_toggle, &r->carried, &r->hp) != 21) return 2;
-    }
+    for (i = 0; i < n; i++)
+        for (j = 0; j < NF; j++)
+            if (fscanf(f, "%ld", &t[i].v[j]) != 1) return 2;
     fclose(f);
+    min_ticks = argc > 3 ? (strcmp(argv[3], "all") == 0 ? n - 1 : atol(argv[3])) : n - 1;
     lev = malloc((size_t)(W * H));
     f = fopen(argv[2], "rb");
     if (!f || fread(lev, 1, (size_t)(W * H), f) != (size_t)(W * H)) { perror(argv[2]); return 2; }
@@ -88,61 +126,65 @@ int main(int argc, char **argv)
 
     w.gravity = grav; w.air_pct = air; w.drag_f = bits_to_float(drag_bits);
     w.level_w = W; w.level_h = H; w.dir72 = (const int32_t (*)[2])dir72;
+    L.pix = lev; L.pitch = W; L.w = W; L.h = H;
     load_ship(&s, &t[0], bits_to_float(thrust_bits), turn, maxs, p5);
 
     for (i = 1; i < n; i++) {
         const rec_t *q = &t[i];
         ship_keys_t k;
         ship_events_t ev;
-        int32_t nx, ny, vals[9], want[9];
-        static const char *names[9] = {"x", "y", "xsub", "ysub", "vx", "vy", "angle10",
-                                       "angle_deg", "p5_acc"};
+        terrain_events_t tev;
+        int32_t nx, ny;
+        long vals[NF];
         int bad = 0;
-        if (q->frame != t[i - 1].frame + 1) { stop = "frame gap"; break; }
-        k.thrust = (int)q->key_thrust; k.left = (int)q->key_left; k.right = (int)q->key_right;
+        if (q->v[F_FRAME] != t[i - 1].v[F_FRAME] + 1) { stop = "frame gap"; break; }
+        k.thrust = (int)q->v[F_KEY_THRUST]; k.left = (int)q->v[F_KEY_LEFT]; k.right = (int)q->v[F_KEY_RIGHT];
+        memset(&tev, 0, sizeof tev);
         ship_step_pre(&s, &k, &w, &ev);
         ship_next_pixel(&s, &nx, &ny);
-        if (nx < 0 || ny < 0 || nx >= W || ny >= H || material_class(lev[ny * W + nx]) != MAT_AIR) {
-            static char buf[96];
-            sprintf(buf, "non-air collision pixel (%ld,%ld)=%d at frame %ld", (long)nx, (long)ny,
-                    nx >= 0 && ny >= 0 && nx < W && ny < H ? lev[ny * W + nx] : -1, q->frame);
-            stop = buf;
-            break;
+        if (material_class(level_get_pixel(&L, nx, ny)) != MAT_AIR) {
+            contacts++;
+            if (first_contact < 0) first_contact = q->v[F_FRAME];
         }
+        player_terrain_collide(&s, &L, (int32_t)repair, &tev);
+        player_apply_damage(&s, 0, -1, &tev);
         ship_step_post(&s, &k, &w, &ev);
-        vals[0] = s.x; vals[1] = s.y; vals[2] = s.xsub; vals[3] = s.ysub; vals[4] = s.vx;
-        vals[5] = s.vy; vals[6] = s.angle10; vals[7] = s.angle_deg; vals[8] = s.p5_acc;
-        want[0] = q->x; want[1] = q->y; want[2] = q->xsub; want[3] = q->ysub; want[4] = q->vx;
-        want[5] = q->vy; want[6] = q->angle10; want[7] = q->angle_deg; want[8] = q->p5_acc;
-        for (j = 0; j < 9; j++) bad |= vals[j] != want[j];
+        splashes += tev.splash; hits += tev.hit_sound; cleared += tev.pixels_cleared; fire += tev.fire;
+        base_ticks += s.on_own_base || s.on_any_base;
+        water_ticks += s.material == MAT_WATER;
+        if (tev.died) { stop = "ship died (player_die not reconstructed)"; break; }
+        save_ship(&s, vals);
+        for (j = 1; j < NCMP; j++) bad |= vals[j] != q->v[j];
         if (air == 100) {
-            int32_t pv[2], got[2];
-            pv[0] = ev.pre_drag_vx; pv[1] = ev.pre_drag_vy; got[0] = q->vx; got[1] = q->vy;
+            int32_t pv[2];
+            pv[0] = ev.pre_drag_vx; pv[1] = ev.pre_drag_vy;
             for (j = 0; j < 2; j++) {
                 if (pv[j] != 0 && pv[j] % 200 == 0) {
                     int32_t x87 = x87_mul_trunc(SHIP_DRAG_DEFAULT, pv[j]);
                     int32_t dbl = (int32_t)(SHIP_DRAG_DEFAULT * (double)pv[j]);
+                    long got = q->v[j ? F_VY : F_VX];
                     rounding_ticks++;
-                    double_would_fail += dbl != got[j];
-                    printf("  v%%200 frame %ld %s: v=%ld  x87=%ld  double53=%ld  trace=%ld\n",
-                           q->frame, j ? "vy" : "vx", (long)pv[j], (long)x87, (long)dbl,
-                           (long)got[j]);
+                    /* only meaningful when nothing after the drag touched v this tick */
+                    double_would_fail += dbl != got && x87 == got;
                 }
             }
         }
         if (bad) {
-            printf("MISMATCH frame %ld:", q->frame);
-            for (j = 0; j < 9; j++)
-                if (vals[j] != want[j]) printf(" %s recon=%ld trace=%ld", names[j], (long)vals[j], (long)want[j]);
+            printf("MISMATCH frame %ld:", q->v[F_FRAME]);
+            for (j = 1; j < NCMP; j++)
+                if (vals[j] != q->v[j]) printf(" %s recon=%ld trace=%ld", FIELD_NAMES[j], vals[j], q->v[j]);
             printf("\n");
             stop = "mismatch";
             break;
         }
         matched++;
     }
-    printf("%ld consecutive ticks match (frames %ld..%ld); stop: %s\n", matched, t[0].frame + 1,
-           t[0].frame + matched, stop);
-    printf("v%%200 drag ticks: %ld, where a 53-bit double product would have diverged: %ld\n",
+    printf("%ld/%ld ticks match (frames %ld..%ld); stop: %s\n", matched, n - 1, t[0].v[F_FRAME] + 1,
+           t[0].v[F_FRAME] + matched, stop);
+    printf("  first terrain contact frame %ld, contact ticks %ld, damaging hits %ld, splashes %ld, "
+           "fire %ld, base ticks %ld, water ticks %ld, base pixels erased %ld\n", first_contact,
+           contacts, hits, splashes, fire, base_ticks, water_ticks, cleared);
+    printf("  v%%200 drag ticks: %ld, where a 53-bit double product would have diverged: %ld\n",
            rounding_ticks, double_would_fail);
     free(t);
     free(lev);

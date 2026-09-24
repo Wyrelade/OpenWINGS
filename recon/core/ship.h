@@ -1,9 +1,9 @@
 /* Wings 1.40 ship movement: the per-player block inlined in match_main (0x3531C-0x35F00).
  * Spec: docs/systems/physics.md.  Layout source: re/types.h (player_t).
  *
- * ship_step() = ship_step_pre() + [forces, terrain collision, damage: not yet reconstructed]
- *             + ship_step_post().  Callers that need the air-only subset check the pixel at
- * ship_next_pixel() between the two halves (RE-2 will fill the gap). */
+ * One tick = ship_step_pre() + [player_apply_forces: not reconstructed] + player_terrain_collide()
+ * + player_apply_damage() (recon/core/terrain.c) + ship_step_post().  ship_step() is the air-only
+ * subset (pre + post). */
 #ifndef RECON_SHIP_H
 #define RECON_SHIP_H
 #include <stdint.h>
@@ -18,7 +18,8 @@ typedef struct {
     uint8_t flash_color, flash_color_restore; /* +0x80 / +0x81 */
     uint8_t exhaust_toggle; /* +0xB0 */
     uint8_t carried;        /* +0xC6 */
-    uint8_t on_base;        /* +0xA8 || +0xA9 (turn keys cycle weapons instead of rotating) */
+    uint8_t on_own_base;    /* +0xA8: own-team or neutral destructible base (repair) */
+    uint8_t on_any_base;    /* +0xA9: indestructible base 38..39 (no repair) */
     int32_t push_timer;     /* +0xD4 */
     int32_t push_vx, push_vy; /* +0xD8 / +0xDC */
     float   thrust;         /* +0xF4: ship p3 */
@@ -26,7 +27,17 @@ typedef struct {
     int32_t max_speed;      /* +0xF8: ship p4 */
     int32_t p5_rate;        /* +0xFC: ship p5 */
     int32_t p5_acc;         /* +0x100 */
-    int32_t hp;             /* +0x30 (only read: exhaust needs hp > 0) */
+    int32_t hp;             /* +0x30 */
+    int32_t hp_max;         /* +0x2C */
+    int32_t team;           /* +0x20 */
+    int32_t material;       /* +0xAC: material class of the next pixel, set by player_terrain_collide */
+    int32_t base_repair_ctr; /* +0xA4 */
+    int32_t damage_acc;     /* +0x114: summed during the tick, applied by player_apply_damage */
+    int32_t last_attacker;  /* +0x118: 100 = none */
+    int32_t attacker_age;   /* +0x11C */
+    int32_t shield;         /* +0x108 (u_108): 1 -> damage - 15, no fire damage */
+    int32_t u_120;          /* +0x120: attacker credited when carried/pushed [?] */
+    int32_t u_c8;           /* +0xC8: reduced by damage/4 while carried [?] */
 } ship_t;
 
 typedef struct {
