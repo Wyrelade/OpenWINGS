@@ -5,7 +5,7 @@ dead function at 0xB92C (845 bytes, no direct or indirect references). Once per 
 simulation tick and before flip(), the hook:
   1. on first call: malloc()s a 4 MB RAM buffer (page aligned) and fread()s SCRIPT.BIN
      (1 byte per frame) into a second buffer; writes a header page;
-  2. appends a 512-byte record for this frame (8 records per 4 KB page, never straddling pages);
+  2. appends a 1024-byte record for this frame (4 records per 4 KB page, never straddling pages);
   3. writes the next frame's scripted key state into the live key table 0x5E3D4 using player 0's
      own key bindings (player+0x88..0x8C); script byte bit k -> key flag k (+0x90 + 4k);
   4. tail-jumps to flip() (0x109E0).
@@ -17,9 +17,10 @@ self-describing pages (CWSDPMI paging means linear != physical, hence page-local
 
 Header page ("WHDR"): char magic[4]="WHDR"; u32 zero; i32 g_gravity; f32 g_air_drag_f;
   i32 opt_gravity_pct; i32 opt_air_res_pct; i32 dir72[72][2]; i32 dir360[360][2];
-  u8 ship_type_hdr[0x24] (of players[0].ship_type); i32 level_w; i32 level_h
-Record (512 B): char magic[4]="WREC"; u32 frame_counter; u8 player0[0x128];
-  u8 keytable_frame[128] (0x5E4D4..); padding
+  u8 ship_type_hdr[0x24] (of players[0].ship_type); i32 level_w; i32 level_h;
+  u8 level_row240[400]; u8 level_row300_x200[128]  (level signature, v3)
+Record (1024 B, v3): char magic[4]="WRC3"; u32 frame_counter; u8 players[2][0x128];
+  u8 keytable_frame[128] (0x5E4D4..); padding.  (v2 traces: 512 B "WREC" with player 0 only.)
 
 usage: make_trace_exe.py <src WINGS.EXE> <dst WINGS.EXE> [--teleport X Y]
   --teleport: at the end of frame 1 move player 0 to pixel (X,Y) with zero sub-pixel and
@@ -40,7 +41,11 @@ PLAYERS = 0x9B444
 KEYTAB = 0x5E3D4
 KEYTAB_FRAME = 0x5E4D4
 BUF_SIZE = 0x400000
-REC = 512
+REC = 1024
+# level signature rows copied into the header (identify which level really loaded)
+SIG_ROW_A, SIG_LEN_A = 240, 400
+SIG_ROW_B, SIG_X_B, SIG_LEN_B = 300, 200, 128
+NPLAYERS_REC = 2
 
 
 def va2off(va):
@@ -115,6 +120,17 @@ def build(data_base, teleport=None):
         mov ecx, 0x24
         rep movsb
         {cp('0x9ae00', 8)}
+        mov esi, dword ptr [0x9974c]
+        imul esi, esi, {SIG_ROW_A}
+        add esi, dword ptr [0x99754]
+        mov ecx, {SIG_LEN_A}
+        rep movsb
+        mov esi, dword ptr [0x9974c]
+        imul esi, esi, {SIG_ROW_B}
+        add esi, dword ptr [0x99754]
+        add esi, {SIG_X_B}
+        mov ecx, {SIG_LEN_B}
+        rep movsb
         mov edi, dword ptr [{rbuf:#x}]
         add edi, 0x1000
         mov dword ptr [{wptr:#x}], edi
@@ -125,11 +141,11 @@ def build(data_base, teleport=None):
         add eax, {BUF_SIZE:#x}
         cmp edi, eax
         jae inputs
-        mov dword ptr [edi], 0x43455257
+        mov dword ptr [edi], 0x33435257
         mov eax, dword ptr [{FRAME_COUNTER:#x}]
         mov dword ptr [edi + 4], eax
         add edi, 8
-        {cp(hex(PLAYERS), 0x128)}
+        {cp(hex(PLAYERS), 0x128 * NPLAYERS_REC)}
         {cp(hex(KEYTAB_FRAME), 0x80)}
         mov edi, dword ptr [{wptr:#x}]
         add edi, {REC:#x}
@@ -171,7 +187,7 @@ def main():
     data_base = (CAVE + len(code) + 3) & ~3
     code = build(data_base, teleport)
     assert (CAVE + len(code) + 3) & ~3 == data_base
-    data = struct.pack('<IIII', 0, 0, 0, 0) + b'SCRIPT.BIN\0' + b'rb\0' + b'WHOOKv2'
+    data = struct.pack('<IIII', 0, 0, 0, 0) + b'SCRIPT.BIN\0' + b'rb\0' + b'WHOOKv3'
     blob = code + b'\0' * (data_base - CAVE - len(code)) + data
     assert len(blob) <= CAVE_SIZE, len(blob)
     o = va2off(CAVE)
