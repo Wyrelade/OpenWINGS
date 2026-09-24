@@ -27,7 +27,9 @@ BUILD = os.path.join(ROOT, 'build', 'recon')
 CORE = ['recon/core/x87.c', 'recon/core/ship.c', 'recon/core/material.c']
 CFLAGS = ['-std=c99', '-O2', '-Wall', '-Wextra', '-pedantic', '-Werror']
 CORE += ['recon/core/terrain.c']
-TRACES = ['lego_noinput', 'lego_thrust', 'lego_rotate', 'lego_mixed', 'lego_dive']
+TRACES = ['lego_noinput', 'lego_thrust', 'lego_rotate', 'lego_mixed', 'lego_dive',
+          'lego_base', 'lego_enemybase', 'lego_neutral', 'lego_water',
+          'forest_current', 'forest_soft', 'arena_indbase', 'waste_snow']
 # must equal FIELD_NAMES in ship_diff.c
 FIELDS = ['frame', 'x', 'y', 'xsub', 'ysub', 'vx', 'vy', 'angle10', 'angle_deg', 'p5_acc',
           'hp', 'flash_timer', 'damage_acc', 'on_own_base', 'on_any_base', 'material',
@@ -83,16 +85,21 @@ def export(name):
     lvname, score = (g.get('level_match') or ':0').split(':')
     assert float(score) > 0.95, (name, g.get('level_match'))
     p0 = t['ticks'][0]['player']
-    # g_repair = max(1, opt_ship_strength_pct / 100); hp_max = strength*120/100 * p0/100
-    assert p0['hp_max'] == 120 * st['p0_strength'] // 100, 'ship strength option is not 100%'
-    repair = 1
+    opts = t.get('options')
+    if opts:  # v4 traces record the options that matter
+        assert opts['flowing_water'] == 0 and opts['waves'] == 0, opts
+        repair = opts['g_repair']
+    else:
+        # g_repair = max(1, opt_ship_strength_pct / 100); hp_max = strength*120/100 * p0/100
+        assert p0['hp_max'] == 120 * st['p0_strength'] // 100, 'ship strength option is not 100%'
+        repair = 1
     lines = [f"{g['level_w']} {g['level_h']} {g['g_gravity']} {g['opt_air_res_pct']} "
              f"{fbits(g['g_air_drag_f']):x} {fbits(st['p3_thrust']):x} {st['p2_turn']} "
              f"{st['p4_maxspeed']} {st['p5_rate']} {repair}",
              ' '.join(f'{c} {s}' for c, s in t['dir72']), ' '.join(FIELDS), str(len(t['ticks']))]
     for r in t['ticks']:
         p = dict(r['player'], frame=r['frame'])
-        lines.append(' '.join(str(p[f]) for f in FIELDS))
+        lines.append(' '.join(str(p[f]) for f in FIELDS) + ' ' + str(r.get('window_crc', '-')))
     path = os.path.join(BUILD, f'{name}.txt')
     open(path, 'w').write('\n'.join(lines) + '\n')
     lv = parse(find_level(lvname))
@@ -108,6 +115,8 @@ def main():
     diff = cc('recon/tests/ship_diff.c', 'ship_diff')
     for name in TRACES:
         print(f'== {name}', flush=True)
+        if not os.path.exists(os.path.join(ROOT, 're', 'traces', f'{name}_dosbox_mingw32.json')):
+            print('  missing trace'); ok = False; continue
         r = subprocess.run([diff, *export(name), 'all'])
         ok &= r.returncode == 0
     print('PASS' if ok else 'FAIL')

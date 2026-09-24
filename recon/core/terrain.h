@@ -24,6 +24,9 @@ typedef struct {
     int pixels_cleared;     /* base pixels above a resting ship erased by level_set_pixel */
     int died;               /* hp dropped to <= 0: player_die() 0x37A58 would run (not reconstructed) */
     int32_t kill_credit;    /* attacker index credited on death (100 = none / suicide) */
+    int drag;               /* water (0.952) or class-8 (0.65) drag applied this tick (diagnostics) */
+    double drag_c;          /* its constant */
+    int32_t drag_vx, drag_vy; /* velocity entering that drag */
 } terrain_events_t;
 
 uint8_t level_get_pixel(const level_t *l, int32_t x, int32_t y);          /* 0x39FD8 */

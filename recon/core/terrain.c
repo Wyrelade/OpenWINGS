@@ -99,6 +99,7 @@ void player_terrain_collide(ship_t *s, level_t *l, int32_t repair, terrain_event
         if (k == 1) s->vy += 120;
         if (k == 2) { s->vy -= 12; s->vx -= 90; }
         if (k == 3) { s->vy -= 12; s->vx += 90; }
+        ev->drag = 1; ev->drag_c = TERRAIN_WATER_DRAG; ev->drag_vx = s->vx; ev->drag_vy = s->vy;
         s->vx = x87_mul_trunc(TERRAIN_WATER_DRAG, s->vx);
         s->vy = x87_mul_trunc(TERRAIN_WATER_DRAG, s->vy);
         s->carried = 0;
@@ -108,6 +109,7 @@ void player_terrain_collide(ship_t *s, level_t *l, int32_t repair, terrain_event
     if (cls == MAT_SPECIAL) {
         if (c0 == 53 && s->material != MAT_SPECIAL)
             splash(s, ship_speed(s->vx, s->vy) / 2, ev);
+        ev->drag = 1; ev->drag_c = TERRAIN_SPECIAL_DRAG; ev->drag_vx = s->vx; ev->drag_vy = s->vy;
         s->vx = x87_mul_trunc(TERRAIN_SPECIAL_DRAG, s->vx);
         s->vy = x87_mul_trunc(TERRAIN_SPECIAL_DRAG, s->vy);
         if ((uint32_t)(s->vy - 1) <= 23)

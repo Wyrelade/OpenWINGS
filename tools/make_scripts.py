@@ -11,6 +11,24 @@ Scripts are designed offline with tools/ship_model.py so the ship stays inside t
   mixed    : thrust + turn controller flying a circle, with coast and spin-only phases
   dive     : turn nose-down, then full thrust: |v| passes max_speed (2000) before the ground, so
              the ship_speed limit (thrust undo) is exercised
+(these five are captured on LEGO with teleport 284,227 and saved as lego_<kind>.bin)
+
+RE-2 terrain scripts (designed with tools/recon_sim.py, i.e. recon/core incl. terrain collision):
+  lego_base      : drop onto ground (damage), hop left onto the own team-0 base (40/41), repair
+                   to full, lift off, spin in the air, land again (angle snaps upright)
+  lego_enemybase : drop onto the team-1 base (42/43): stopped, but no base flags
+  lego_neutral   : drop onto a neutral base (33-35): on_own_base, lift off, land again
+  lego_water     : drop into the still-water pool (48): splash in/out, buoyancy, 0.952 drag,
+                   turn upside down and thrust down, turn back and hit the ceiling
+  forest_current : start inside FOREST's waterfall (49 down) -> currents 50/51, underwater hits
+  forest_soft    : drop onto soft ground (96-111): halved, never damaged
+  arena_indbase  : drop onto an indestructible base (38/39): on_any_base, rotation while resting
+  waste_snow     : drop into snow (53, class 8) on the community level WASTE: 0.65 drag, sinks and
+                   stops, thrusts out and lands in the snow again (copy original/wingslev/WASTE.lev
+                   to re/work/LEV_hidden/WASTE.LEV first)
+Script byte i is applied on frame i+1; the teleport happens at the end of frame 1, so the sim
+starts from the teleport state with script[1:].
+A manifest re/harness/scripts/captures.txt lists `name seconds level tx ty` for capture.sh.
 
 usage: make_scripts.py <out_dir>
 """
@@ -101,9 +119,46 @@ def gen(kind, n, dir72):
     return script
 
 
+T_, L_, R_ = T, L, R
+TERRAIN = [
+    # name, level, tx, ty, script
+    ('lego_base', 'LEGO.LEV', 42, 40,
+     [0] * 100 + [L_] * 4 + [T_] * 10 + [0] * 250 + [T_] * 25 + [0] * 150 + [L_] * 30 + [R_] * 30
+     + [0] * 10 + [T_] * 8 + [0] * 120),
+    ('lego_enemybase', 'LEGO.LEV', 320, 60, [0] * 150 + [T_] * 25 + [0] * 200),
+    ('lego_neutral', 'LEGO.LEV', 236, 20, [0] * 150 + [T_] * 25 + [0] * 200),
+    ('lego_water', 'LEGO.LEV', 90, 330,
+     [0] * 250 + [R_] * 36 + [0] * 5 + [T_] * 20 + [0] * 60 + [L_] * 36 + [T_] * 60 + [0] * 200),
+    ('forest_current', 'FOREST.LEV', 300, 170, [0] * 400 + [R_] * 20 + [T_] * 40 + [0] * 100),
+    ('forest_soft', 'FOREST.LEV', 160, 130, [0] * 200 + [T_] * 20 + [0] * 150),
+    ('arena_indbase', 'ARENA.LEV', 200, 300,
+     [0] * 170 + [R_] * 30 + [0] * 20 + [T_] * 25 + [0] * 100 + [L_] * 20 + [0] * 80),
+    ('waste_snow', 'WASTE.LEV', 569, 200,
+     [0] * 150 + [T_] * 30 + [0] * 120 + [R_] * 10 + [T_] * 15 + [0] * 150),
+]
+
+
+def terrain_scripts(out):
+    from recon_sim import Recon
+    lines = []
+    sims = {}
+    for name, lev, tx, ty, script in TERRAIN:
+        sim = sims.setdefault(lev, Recon(lev))
+        path = sim.run(tx, ty, script[1:])
+        hp = min(p['hp'] for p in path)
+        feats = dict(own=sum(p['on_own_base'] for p in path), any=sum(p['on_any_base'] for p in path),
+                     water=sum(p['material'] == 3 for p in path), min_hp=hp)
+        open(os.path.join(out, f'{name}.bin'), 'wb').write(bytes(script))
+        secs = len(script) // 50 + 30
+        lines.append(f'{name} {secs} {lev} {tx} {ty}')
+        print(f'{name}: {len(script)} bytes on {lev} from ({tx},{ty}); recon sim: {feats}')
+    open(os.path.join(out, 'captures.txt'), 'w').write('\n'.join(lines) + '\n')
+
+
 def main():
     out = sys.argv[1]
     os.makedirs(out, exist_ok=True)
+    terrain_scripts(out)
     t = json.load(open(os.path.join(os.path.dirname(__file__), '..', 're', 'traces',
                                     'lego_noinput_dosbox_mingw32.json')))
     dir72 = t['dir72']
@@ -111,7 +166,7 @@ def main():
         s = gen(kind, n, dir72)
         path = simulate(s, dir72)
         air = next((i for i, p in enumerate(path) if not inside(p)), len(path))
-        open(os.path.join(out, f'{kind}.bin'), 'wb').write(bytes(s))
+        open(os.path.join(out, f'lego_{kind}.bin'), 'wb').write(bytes(s))
         lim = sum(1 for p, q, b in zip(path, path[1:], s) if b & T and max(abs(p['vx']), abs(p['vy'])) > 2000)
         print(f'{kind}: {len(s)} bytes, model stays in box for {air} ticks, limit checks {lim}, '
               f'thrust {sum(1 for b in s if b & T)}, turn {sum(1 for b in s if b & (L | R))}')

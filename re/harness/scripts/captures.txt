@@ -1,0 +1,8 @@
+lego_base 44 LEGO.LEV 42 40
+lego_enemybase 37 LEGO.LEV 320 60
+lego_neutral 37 LEGO.LEV 236 20
+lego_water 43 LEGO.LEV 90 330
+forest_current 41 FOREST.LEV 300 170
+forest_soft 37 FOREST.LEV 160 130
+arena_indbase 38 ARENA.LEV 200 300
+waste_snow 39 WASTE.LEV 569 200

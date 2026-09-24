@@ -19,8 +19,12 @@ Header page ("WHDR"): char magic[4]="WHDR"; u32 zero; i32 g_gravity; f32 g_air_d
   i32 opt_gravity_pct; i32 opt_air_res_pct; i32 dir72[72][2]; i32 dir360[360][2];
   u8 ship_type_hdr[0x24] (of players[0].ship_type); i32 level_w; i32 level_h;
   u8 level_row240[400]; u8 level_row300_x200[128]  (level signature, v3)
-Record (1024 B, v3): char magic[4]="WRC3"; u32 frame_counter; u8 players[2][0x128];
-  u8 keytable_frame[128] (0x5E4D4..); padding.  (v2 traces: 512 B "WREC" with player 0 only.)
+  u8 opts[8] (0x9AB64..0x9AB6B: waves 0x9AB64, flowing water 0x9AB69); i32 opt_ship_strength_pct
+  (0x9AB8C); i32 g_repair (0x9EAE8)  (v4; header must fit one 4 KB page)
+Record (1024 B, v4): char magic[4]="WRC4"; u32 frame_counter; u8 players[2][0x128];
+  u8 keytable_frame[128] (0x5E4D4..); u8 level_window[17][17] (level pixels x-8..x+8, y-8..y+8
+  around player 0 after the tick; detects level changes such as water flow); padding.
+  (v3: "WRC3" without the window; v2 traces: 512 B "WREC" with player 0 only.)
 
 usage: make_trace_exe.py <src WINGS.EXE> <dst WINGS.EXE> [--teleport X Y]
   --teleport: at the end of frame 1 move player 0 to pixel (X,Y) with zero sub-pixel and
@@ -46,6 +50,8 @@ REC = 1024
 SIG_ROW_A, SIG_LEN_A = 240, 400
 SIG_ROW_B, SIG_X_B, SIG_LEN_B = 300, 200, 128
 NPLAYERS_REC = 2
+WIN_R = 8
+WIN = 2 * WIN_R + 1
 
 
 def va2off(va):
@@ -131,6 +137,9 @@ def build(data_base, teleport=None):
         add esi, {SIG_X_B}
         mov ecx, {SIG_LEN_B}
         rep movsb
+        {cp('0x9ab64', 8)}
+        {cp('0x9ab8c', 4)}
+        {cp('0x9eae8', 4)}
         mov edi, dword ptr [{rbuf:#x}]
         add edi, 0x1000
         mov dword ptr [{wptr:#x}], edi
@@ -141,12 +150,26 @@ def build(data_base, teleport=None):
         add eax, {BUF_SIZE:#x}
         cmp edi, eax
         jae inputs
-        mov dword ptr [edi], 0x33435257
+        mov dword ptr [edi], 0x34435257
         mov eax, dword ptr [{FRAME_COUNTER:#x}]
         mov dword ptr [edi + 4], eax
         add edi, 8
         {cp(hex(PLAYERS), 0x128 * NPLAYERS_REC)}
         {cp(hex(KEYTAB_FRAME), 0x80)}
+        mov esi, dword ptr [{PLAYERS + 4:#x}]
+        sub esi, {WIN_R}
+        imul esi, dword ptr [0x9974c]
+        add esi, dword ptr [{PLAYERS:#x}]
+        sub esi, {WIN_R}
+        add esi, dword ptr [0x99754]
+        mov edx, {WIN}
+    winrow:
+        mov ecx, {WIN}
+        rep movsb
+        add esi, dword ptr [0x9974c]
+        sub esi, {WIN}
+        dec edx
+        jnz winrow
         mov edi, dword ptr [{wptr:#x}]
         add edi, {REC:#x}
         mov dword ptr [{wptr:#x}], edi
@@ -187,7 +210,7 @@ def main():
     data_base = (CAVE + len(code) + 3) & ~3
     code = build(data_base, teleport)
     assert (CAVE + len(code) + 3) & ~3 == data_base
-    data = struct.pack('<IIII', 0, 0, 0, 0) + b'SCRIPT.BIN\0' + b'rb\0' + b'WHOOKv3'
+    data = struct.pack('<IIII', 0, 0, 0, 0) + b'SCRIPT.BIN\0' + b'rb\0' + b'WHOOKv4'
     blob = code + b'\0' * (data_base - CAVE - len(code)) + data
     assert len(blob) <= CAVE_SIZE, len(blob)
     o = va2off(CAVE)

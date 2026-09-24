@@ -2,8 +2,8 @@
  *
  * The ship is simulated free-running from the trace's first record (no resync), using the key
  * flags the original recorded for each tick.  Per tick: ship_step_pre, player_terrain_collide,
- * player_apply_damage, ship_step_post (player_apply_forces is not reconstructed; the run stops
- * if the original shows a push/force the recon cannot know about, i.e. at the first mismatch).
+ * player_apply_damage, ship_step_post.  player_apply_forces (weapon/explosion forces) is not
+ * reconstructed: the run ends at the first force from another player (see below).
  * Also lists every tick where the velocity entering the drag step is a non-zero multiple of 200:
  * there a 53-bit double product gives a different answer than the x87's 64-bit mantissa.
  *
@@ -11,11 +11,13 @@
  *   W H gravity air_pct drag_f_bits(hex) thrust_bits(hex) turn_rate max_speed p5_rate repair
  *   144 ints: dir72
  *   NF field names (must equal FIELD_NAMES below)
- *   N, then N lines of NF ints
+ *   N, then N lines of NF ints + CRC32 of the level window (17x17 level pixels around (x, y)
+ *   after the tick, row-major, read by the v4 hook without bounds checks; "-" for older traces)
  * Level file: W*H raw palette indices (mutable copy: landing may erase base pixels).
  *
  * usage: ship_diff <fixture.txt> <level.bin> [min_ticks|all]
- *   exit 0 if >= min_ticks matched ("all" = every tick of the trace) */
+ *   exit 0 if >= min_ticks matched ("all" = every tick of the trace), or if every tick matched up to
+ *   an external force (another player's weapon/explosion hit), where the checkable part ends */
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -41,7 +43,38 @@ static const char *FIELD_NAMES[NF] = {
 /* fields compared every tick (F_FRAME+1 .. F_FLASH_COLOR) */
 #define NCMP (F_FLASH_COLOR + 1)
 
-typedef struct { long v[NF]; } rec_t;
+#define WIN_R 8
+#define WIN (2 * WIN_R + 1)
+typedef struct { long v[NF]; int has_win; unsigned long win_crc; } rec_t;
+
+static unsigned long crc32_bytes(const unsigned char *p, int n)
+{
+    unsigned long c = 0xFFFFFFFFUL;
+    int k;
+    while (n--) {
+        c ^= *p++;
+        for (k = 0; k < 8; k++)
+            c = (c >> 1) ^ (0xEDB88320UL & (0UL - (c & 1)));
+    }
+    return c ^ 0xFFFFFFFFUL;
+}
+
+/* CRC32 of the 17x17 window of the recon level (with its own edits) exactly as the v4 hook reads
+ * it (linear index, no bounds checks).  Returns 0 if part of the window lies outside the pixel
+ * array (the hook then read unrelated memory and the tick cannot be checked). */
+static int window_crc(const unsigned char *lev, long W, long H, const rec_t *q, unsigned long *crc)
+{
+    unsigned char buf[WIN * WIN];
+    int r, c;
+    for (r = 0; r < WIN; r++)
+        for (c = 0; c < WIN; c++) {
+            long idx = (q->v[F_Y] - WIN_R + r) * W + (q->v[F_X] - WIN_R + c);
+            if (idx < 0 || idx >= W * H) return 0;
+            buf[r * WIN + c] = lev[idx];
+        }
+    *crc = crc32_bytes(buf, WIN * WIN);
+    return 1;
+}
 
 static float bits_to_float(unsigned long b)
 {
@@ -85,7 +118,8 @@ int main(int argc, char **argv)
     FILE *f;
     long W, H, grav, air, turn, maxs, p5, repair, n, i, j, matched = 0, rounding_ticks = 0;
     long double_would_fail = 0, min_ticks, first_contact = -1, contacts = 0;
-    long splashes = 0, hits = 0, base_ticks = 0, water_ticks = 0, cleared = 0, fire = 0;
+    long splashes = 0, hits = 0, base_ticks = 0, water_ticks = 0, cleared = 0, fire = 0, win_ticks = 0;
+    long tdrag = 0, tdrag_x87 = 0;
     unsigned long drag_bits, thrust_bits;
     int32_t dir72[72][2];
     rec_t *t;
@@ -94,6 +128,7 @@ int main(int argc, char **argv)
     ship_world_t w;
     level_t L;
     const char *stop = "end of trace";
+    int external = 0;
     char name[64];
 
     if (argc < 3) { fprintf(stderr, "usage: ship_diff fixture level [min|all]\n"); return 2; }
@@ -114,9 +149,14 @@ int main(int argc, char **argv)
     }
     if (fscanf(f, "%ld", &n) != 1 || n < 2) return 2;
     t = calloc((size_t)n, sizeof *t);
-    for (i = 0; i < n; i++)
+    for (i = 0; i < n; i++) {
+        char tok[32];
         for (j = 0; j < NF; j++)
             if (fscanf(f, "%ld", &t[i].v[j]) != 1) return 2;
+        if (fscanf(f, "%31s", tok) != 1) return 2;
+        t[i].has_win = strcmp(tok, "-") != 0;
+        t[i].win_crc = t[i].has_win ? strtoul(tok, NULL, 10) : 0;
+    }
     fclose(f);
     min_ticks = argc > 3 ? (strcmp(argv[3], "all") == 0 ? n - 1 : atol(argv[3])) : n - 1;
     lev = malloc((size_t)(W * H));
@@ -149,11 +189,27 @@ int main(int argc, char **argv)
         player_terrain_collide(&s, &L, (int32_t)repair, &tev);
         player_apply_damage(&s, 0, -1, &tev);
         ship_step_post(&s, &k, &w, &ev);
+        if (tev.drag) {
+            tdrag++;
+            tdrag_x87 += x87_mul_trunc(tev.drag_c, tev.drag_vx) != (int32_t)(tev.drag_c * tev.drag_vx)
+                      || x87_mul_trunc(tev.drag_c, tev.drag_vy) != (int32_t)(tev.drag_c * tev.drag_vy);
+        }
         splashes += tev.splash; hits += tev.hit_sound; cleared += tev.pixels_cleared; fire += tev.fire;
         base_ticks += s.on_own_base || s.on_any_base;
         water_ticks += s.material == MAT_WATER;
         if (tev.died) { stop = "ship died (player_die not reconstructed)"; break; }
         save_ship(&s, vals);
+        /* player_apply_forces (0x36AAE) sets last_attacker = source, attacker_age = 0 for a force
+         * from another player; player_apply_damage then makes the age 1.  Forces come from weapons
+         * and explosions, which are not reconstructed: the checkable part of the trace ends here. */
+        if (q->v[F_ATTACKER_AGE] == 1 && q->v[F_LAST_ATTACKER] != 100 && vals[F_ATTACKER_AGE] != 1) {
+            static char buf[128];
+            sprintf(buf, "external force from player %ld at frame %ld (player_apply_forces, weapons: not "
+                    "reconstructed)", q->v[F_LAST_ATTACKER], q->v[F_FRAME]);
+            stop = buf;
+            external = 1;
+            break;
+        }
         for (j = 1; j < NCMP; j++) bad |= vals[j] != q->v[j];
         if (air == 100) {
             int32_t pv[2];
@@ -166,6 +222,18 @@ int main(int argc, char **argv)
                     rounding_ticks++;
                     /* only meaningful when nothing after the drag touched v this tick */
                     double_would_fail += dbl != got && x87 == got;
+                }
+            }
+        }
+        if (!bad && q->has_win) {
+            unsigned long crc;
+            if (window_crc(lev, W, H, q, &crc)) {
+                win_ticks++;
+                if (crc != q->win_crc) {
+                    printf("LEVEL CHANGED frame %ld: level pixels around (%ld,%ld) differ from the recon level\n",
+                           q->v[F_FRAME], q->v[F_X], q->v[F_Y]);
+                    stop = "level pixels changed (not a recon edit)";
+                    break;
                 }
             }
         }
@@ -182,11 +250,15 @@ int main(int argc, char **argv)
     printf("%ld/%ld ticks match (frames %ld..%ld); stop: %s\n", matched, n - 1, t[0].v[F_FRAME] + 1,
            t[0].v[F_FRAME] + matched, stop);
     printf("  first terrain contact frame %ld, contact ticks %ld, damaging hits %ld, splashes %ld, "
-           "fire %ld, base ticks %ld, water ticks %ld, base pixels erased %ld\n", first_contact,
-           contacts, hits, splashes, fire, base_ticks, water_ticks, cleared);
+           "fire %ld, base ticks %ld, water ticks %ld, base pixels erased %ld, level window checked on "
+           "%ld ticks\n", first_contact, contacts, hits, splashes, fire, base_ticks, water_ticks, cleared,
+           win_ticks);
+    printf("  water/snow drag ticks: %ld, where a 53-bit double product differs from x87: %ld\n",
+           tdrag, tdrag_x87);
     printf("  v%%200 drag ticks: %ld, where a 53-bit double product would have diverged: %ld\n",
            rounding_ticks, double_would_fail);
     free(t);
     free(lev);
-    return matched >= min_ticks ? 0 : 1;
+    /* a trace that ends in an external force passes if every tick before it matched */
+    return matched >= min_ticks || (external && matched == i - 1) ? 0 : 1;
 }
