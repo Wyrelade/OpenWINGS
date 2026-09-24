@@ -56,7 +56,7 @@ typedef struct {
     uint8_t on_own_base;      /* +0xA8 [C] */
     uint8_t on_any_base;      /* +0xA9 [C] */
     uint8_t _padaa[2];
-    int32_t material;         /* +0xAC [C] material_class() of pixel at next position */
+    int32_t material;         /* +0xAC [?] written by player_terrain_collide; stays 0 on landing ticks in traces */
     uint8_t exhaust_toggle;   /* +0xB0 [C] ^=1 each tick; exhaust spawned on toggle==1 while thrusting */
     uint8_t _padb1[0x13];
     int8_t  weapon_cycle_dir; /* +0xC4 [C] */

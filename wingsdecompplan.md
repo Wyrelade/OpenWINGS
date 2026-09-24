@@ -403,13 +403,15 @@ Rule: a system is **done** only when its differential test passes (P2 harness).
 - [x] DOSBox-X (MinGW32 build, 80-bit FPU) running Wings `-S0`, menu driven by `autotype`
 - [x] Per-tick dump: patched copy (`tools/make_trace_exe.py`) → RAM records → DOSBox-X `memory file=` → `tools/trace_extract.py` JSON
 - [ ] RNG seed forcing (patch `srand` arg or set state) for reproducible runs
-- [~] Input injection: hook writes SCRIPT.BIN bytes into the key table per frame (built, not yet exercised)
+- [x] Input injection: hook writes SCRIPT.BIN bytes into the key table per frame; 5 scripted traces (noinput/thrust/rotate/mixed/dive)
+- [x] Level identity check: hook copies two level pixel rows into the trace header; `trace_extract.py` names the level (`level_match`)
 
 ### 9.4 Systems (each: spec doc → recon impl → differential test)
 - [x] Timing / main loop (50 Hz fixed step confirmed by disasm) [C]
 - [ ] RNG usage per system
-- [ ] Trig tables
-- [~] Ship physics (thrust/rotate/gravity/drag): spec written (docs/systems/physics.md), recon + diff test pending
+- [~] Trig tables: g_dir72 / g_dir360 values captured in every trace header; builder 0x340A8 not yet reimplemented
+- [x] Ship physics, air subset (thrust + speed limit, rotate, p5, gravity, drag, clamp, integrate): `recon/core/ship.c` matches the original for 1021 / 1299 consecutive ticks (thrust / mixed), exact x87 rounding proven on 13 v%200 ticks [C]
+- [ ] Ship push path (force kind 3 decay) — ported from disasm, no trace yet [H]
 - [ ] Terrain collision & landing
 - [ ] Bases (repair, weapon switch, win condition)
 - [ ] Damage / ship strength / death / respawn
@@ -449,10 +451,11 @@ Rule: a system is **done** only when its differential test passes (P2 harness).
 | Missing referenced files (`JANUSKI.S3M`, `W_SLIDE.LEV`) | Minor; confirm game tolerates | Note only |
 | DOSBox-X determinism (timer, SB IRQ) | Flaky traces | Run with `-S0`, fixed cycles, seed forcing |
 | **Legal**: Wings is freeware but © Miika Virpioja; music by third parties | Distribution of assets/port | Keep original assets user-supplied (loader reads user's copy); reconstructed code is original work; try to contact the author for blessing/licence before public release |
-| **DOSBox-X FPU precision** | MSVC x64 build uses 64-bit long double → drag `trunc(0.995*v)` differs from real x87 whenever v%200==0 | Traces from the MinGW32 build; recon implements exact 64-bit-mantissa rounding; verify on traces |
+| **DOSBox-X FPU precision** | MSVC x64 build uses 64-bit long double → drag `trunc(0.995*v)` differs from real x87 whenever v%200==0 | Traces from the MinGW32 build; recon implements exact 64-bit-mantissa rounding (`recon/core/x87.c`) — **verified on 13 trace ticks** |
+| **Random level choice** | The game often loads another level than LEVELS.DAT names (14 levels are 400×400, so a size check passes wrong ones) — this caused the old "1-player damage" traces | Harness keeps only LEGO.LEV in the work-copy LEV dir and checks a level-pixel signature. Level selection logic [?] |
+| Speed-limit edge cases | `ship_speed` exact-integer boundaries (e.g. v=(0,2000)) only checked against the rational model, not a trace | x87_check covers them; add a trace if a mismatch ever appears |
 | **DJGPP stdio writes in-match run away** | Trace file grew >1 GB/s of zeros (root cause [?]) | No file writes from hooks; RAM records + DOSBox-X `memory file` |
 | libgcc/libg++ 2.7.2.1 archives unavailable | Part of 0x3A000–0x475A0 unlabelled | Other mirrors / rebuild from gcc 2.7.2.1 source |
-| Level-size globals 0x9AE00/0x9AE04 read 800×150 at frame 1 on LEGO (400×400) | Wrong clamp/bounds assumptions | Check writer at 0x345E7 [?] |
 | Scope creep toward MP before reconstruction is verified | Loss of authenticity | Hard gate: MP work uses only [C]-marked systems |
 
 Unknowns list: viewport size per player count; exact spawn logic; AI; pickups existence; sample rate; serial protocol; `.SHP`/`WEAPONS.DAT` semantics; how deathmatch respawn location is chosen; whether any global uses delta-time.
@@ -531,6 +534,16 @@ Next steps to finish RE-1:
 4. Resolve the 0x9AE00 level-size anomaly; name remaining match_main callees (depth 3).
 Then RE-2: terrain collision/landing (`player_terrain_collide` 0x37D94, single-pixel test, already read).
 
+### RE-1 result (2026-09-24) — **done**
+Acceptance met: `recon/core/ship.c` `ship_step()` reproduces position, sub-pixel, velocity, angle and p5 accumulator for
+**1021 (thrust) and 1299 (mixed) consecutive ticks**, free-running with no resync, and for every air tick of
+noinput/rotate (126) and dive (85, speed limit active). Float handling is justified by trace: the 13 drag ticks with
+v%200==0 all match 64-bit-mantissa rounding and would all fail with 53-bit doubles. Run: `python recon/tests/run_ship_diff.py`.
+
+**Next task: RE-2 — terrain collision and landing.** Spec `player_terrain_collide` 0x37D94 (single-pixel test at the
+next position, material classes from `material_class` 0x3987C), bases (landing, repair, weapon cycling), water; capture
+landing traces (every current trace ends in a landing, so each already has a first collision tick to diff).
+
 ---
 
 ## Appendix A — Key addresses discovered so far
@@ -575,6 +588,12 @@ Then RE-2: terrain collision/landing (`player_terrain_collide` 0x37D94, single-p
 | 0x9BD8C / 0x9BFCC | dir tables int[72][2], int[360][2] | disasm + trace [C] |
 | 0x4BA8C / 0x4BAA8 | libm `cos` / `sin` | disasm [C] |
 | 0x5F104 | serial/SB I/O base port variable | disasm [H] |
+| 0x35B29 | ship block: gravity / push (force kind 3) decay | disasm [C] (gravity also trace [C]) |
+| 0x35C37 | ship block: air drag (`fld 0.995 / g_air_drag_f; fimul v; fistp`) | disasm + trace [C] |
+| 0x35CEE | ship block: forces / collide / damage calls, then bounds clamp `[2, W-3]` | disasm [C] |
+| 0x9974C / 0x99754 | level pitch / level pixel base pointer | disasm [C] (trace level signature) |
+| 0x9ABA8 / 0x9ABC8 | player kind[8] (1 human, 2 computer, 3 remote) / show-screen[8] (PLAYERS.DAT) | loader [C] |
+| 0x9B464 | player_t.team (+0x20): PLAYERS.DAT team[8] is read straight into g_players | loader [C] |
 | 0x769F0 / 0x769F4 | `tick_flag` / `tick_count` | disasm [C] |
 | 0x9D744 | frame counter | disasm [H] |
 | 0x9D760 | framerate option (PIT Hz) | disasm [C] |
@@ -587,3 +606,20 @@ Then RE-2: terrain collision/landing (`player_terrain_collide` 0x37D94, single-p
 - **Blocker for thrust/rotate/mixed traces**: in 1-player games the ship takes damage + an impulse within ~20–50 ticks even with rain/snow/bombing/civilians set to 0 in the work-copy LEGO.LEV. Suspect 1-player mission hazards. Next try: 2-player game (PLAYERS.DAT n=2, player 2 idle). Current `lego_thrust`/`lego_rotate` traces were captured with events ON and are only valid up to frames 31/47; `lego_mixed` is valid to frame 19.
 - capture.sh bug fixed (stale output file was reported as ok).
 - Next: 2-player captures → implement `recon/core/ship.c` from ship_model.py → C diff test.
+
+### RE-1 session 3 notes (2026-09-24)
+- ~~Blocker: in 1-player games the ship takes damage + an impulse (suspect 1-player mission hazards)~~ — wrong. PLAYERS.DAT
+  was already n=2 (original file: n=2, kind 1,1 = human). **Real cause [C]:** the game loaded other 400×400 levels
+  (TECHNO, SWAMP seen) and the old harness only checked the size; the "damage" was a landing on that level's terrain.
+  Fix: hook v3 copies level rows 240 and 300 into the trace header, `trace_extract.py` identifies the level,
+  `capture.sh` requires LEGO.LEV with score > 0.95, and the other levels are parked in `re/work/LEV_hidden`.
+- Hook v3 also records player 2 (1024-byte records, "WRC3").
+- Clean traces: noinput, rotate, thrust, mixed, dive (all `level_match` LEGO.LEV:1.000).
+- `recon/core/x87.c`: soft 64-bit-mantissa multiply / int divide / add / sqrt / round-to-double / trunc / floor with
+  two-limb 128-bit integers (no long double, no __int128). `recon/core/material.c`: material_class port.
+- Landing tick rule [C, trace]: the bounce happens exactly on the tick whose integrated next pixel is not air
+  (`material_class != 0`), e.g. mixed frame 1301 pixel (280,302)=136. The recorded `player.material` (+0xAC) stays 0 on
+  those ticks, so its meaning is [?] (not "class of next pixel" as assumed).
+- ship_speed limit path proven by the dive trace (thrust undone on frames 72–86).
+- decomp.dev: `.github/workflows/progress.yml` builds `tools/make_report.py` output (objdiff report v2, artifact
+  `wings140_report`): matched = verified functions (`re/verified.csv`), complete = named (`re/symbols.csv`).

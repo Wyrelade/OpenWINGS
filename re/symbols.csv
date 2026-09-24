@@ -3,7 +3,7 @@ va,name,kind,confidence,notes
 0x00008F04,ship_type_t__load,func,C,"ship_type_t::load(this, filename): WSHP magic, version, name_len, name, 7 params (0x1C bytes) @+8, 72 sprites @+0x24"
 0x00009030,k_speed_div,data,C,float 2000.0
 0x00009034,k_speed_mul,data,C,double 20.0
-0x0000903C,ship_speed,func,C,"trunc(floor(20*sqrt((vx/2000f)^2+(vy/2000f)^2))) = speed in 1/100 px/tick"
+0x0000903C,ship_speed,func,C,"trunc(floor(20*sqrt((vx/2000f)^2+(vy/2000f)^2))) = speed in 1/100 px/tick; verified recon/core/ship.c (dive trace)"
 0x0000909C,player_spawn_init,func,C,"(player*, x, y, hp): reset player state, copy ship params p0..p5 to +0xE8..+0xFC"
 0x000092D8,player_apply_confusion,func,C,"control-scramble status effect: timer +0x10C, kind +0x110 swaps key flags"
 0x00009388,player_on_base,func,H,called when standing on base pixel
@@ -26,7 +26,7 @@ va,name,kind,confidence,notes
 0x0003691C,player_apply_forces,func,C,"iterate force list 0x76A20; v += trunc(f*dir/mass)"
 0x00036F18,player_apply_damage,func,C,"apply accumulated damage +0x114, kill, deathmatch score"
 0x00037D94,player_terrain_collide,func,C,"single-pixel material test at next position; water/solid/base handling"
-0x0003987C,material_class,func,C,"palette index -> class 0..8 (0 air,1 solid,2 base,3 water,4 indestr,5 base-indestr,6 soft,7 burning,8 explosive/fire)"
+0x0003987C,material_class,func,C,"palette index -> class 0..8 (0 air: 0/54/64-79, 1 solid: rest, 2 base 32-47, 3 water 48-51, 4 indestr 80-95, 5 base-indestr 38-39, 6 soft 96-111, 7 burning 112-127, 8: 6/17-20/53 [?]); ported recon/core/material.c"
 0x00039FD8,level_get_pixel,func,C,"bounds-checked level pixel (w=0x9AE00,h=0x9AE04,pitch=0x9974C,base=0x99754)"
 0x000491F4,sqrt,func,C,"fld qword [esp+4]; fsqrt; ret (libm, not in djdev201 libc)"
 0x000491FC,floor,func,C,"RC=down frndint"

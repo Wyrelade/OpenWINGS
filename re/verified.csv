@@ -1,1 +1,2 @@
 va,name,test
+0x0000903C,ship_speed,recon/tests/run_ship_diff.py (dive: speed limit on 15 ticks; x87_check 3310 cases)

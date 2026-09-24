@@ -2,7 +2,7 @@
 
 <!-- PROGRESS:BADGE -->
 ![named](https://img.shields.io/badge/named-25%2F975%20(2.56%25)-1f6feb)
-![verified](https://img.shields.io/badge/verified-0%2F975%20(0.00%25)-2ea043)
+![verified](https://img.shields.io/badge/verified-1%2F975%20(0.10%25)-2ea043)
 <!-- /PROGRESS:BADGE -->
 ![platform](https://img.shields.io/badge/platform-DOS%20(DJGPP%20v2)-8957e5)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -33,16 +33,17 @@ separate track, an online drop-in multiplayer arena.
 
 ## Status
 
-Phase P1 (RE baseline) is largely done and the ground-truth harness works. The ship update has been
-located (inlined in the frame loop), the player and ship-type structures are recovered, and the first
-tick-by-tick trace of the original has been captured. The next milestone is `recon/core/ship.c`
-passing a 500+ tick diff test.
+Phase P1 (RE baseline) is largely done and the ground-truth harness works. Ship flight (RE-1) is
+reconstructed: `recon/core/ship.c` reproduces the original tick for tick in free flight (1021 and 1299
+consecutive ticks on the thrust and mixed traces), including the x87 extended-precision rounding, which
+is emulated in portable C99. Run the diff test with `python recon/tests/run_ship_diff.py`.
+The next milestone is RE-2: terrain collision and landing.
 
 <!-- PROGRESS:TABLE -->
 | Metric | Functions | Count | Progress |
 |---|---:|---:|---|
 | **Named** (symbol + evidence) | 975 | 25 | `▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱` 2.56% |
-| **Verified** (recon passes trace diff) | 975 | 0 | `▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱` 0.00% |
+| **Verified** (recon passes trace diff) | 975 | 1 | `▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱` 0.10% |
 <!-- /PROGRESS:TABLE -->
 
 Every finding is tagged **[C]** confirmed (disassembly plus trace), **[H]** hypothesis or **[?]**
@@ -73,7 +74,7 @@ See [`wingsdecompplan.md`](wingsdecompplan.md) for the full plan, findings and a
 | `re/harness/`, `re/traces/` | DOSBox-X trace harness and captured ground-truth traces |
 | `docs/systems/` | system specs: physics, loop timing, input |
 | `tools/` | format parsers/extractors, disassembly helpers, runtime matcher, trace tools |
-| `recon/` | faithful reimplementation (Track A, upcoming) |
+| `recon/` | faithful reimplementation (Track A): `core/` simulation, `tests/` trace diff tests |
 | `mp/` | multiplayer (Track B, later; depends only on verified `recon/core`) |
 
 ## Quick start

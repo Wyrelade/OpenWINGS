@@ -8,7 +8,7 @@ A function counts as *named* once it has a symbol in `re/symbols.csv` with evide
 > run `python tools/update_readme_progress.py` to regenerate the README badge and table, and commit
 > both files together.
 
-**Game functions identified: 975 · named: 25 · verified: 0**  ·  updated 2026-09-23
+**Game functions identified: 975 · named: 25 · verified: 1**  ·  updated 2026-09-24
 
 Runtime (not counted above, labelled automatically by `tools/lib_match.py`): crt0 + libemu + 160 DJGPP
 libc objects = 290 symbols. libgcc / libg++ 2.7.2.1 still unlabelled (archives unavailable).
@@ -30,8 +30,9 @@ libc objects = 290 symbols. libgcc / libg++ 2.7.2.1 still unlabelled (archives u
 |---|---|---|
 | [x] | DOSBox-X harness | MinGW32 build (80-bit FPU), `-S0`, menus via `autotype` |
 | [x] | per-tick dump | patched copy -> RAM records -> DOSBox-X `memory file` -> JSON |
-| [x] | first trace | `re/traces/lego_noinput_dosbox_mingw32.json` (684 ticks) |
-| [~] | input injection | SCRIPT.BIN -> key table, built but not yet exercised |
+| [x] | first trace | `re/traces/lego_noinput_dosbox_mingw32.json` |
+| [x] | input injection | SCRIPT.BIN -> key table; 5 scripted traces (noinput/thrust/rotate/mixed/dive) |
+| [x] | level identity check | level pixel rows in the trace header; only LEGO.LEV left in the work-copy LEV dir |
 | [ ] | RNG seed forcing | |
 
 ## Systems
@@ -40,8 +41,9 @@ libc objects = 290 symbols. libgcc / libg++ 2.7.2.1 still unlabelled (archives u
 |---|---|---|---|---|
 | [x] | timing / 50 Hz fixed step | loop-timing.md | - | disasm |
 | [x] | input sampling | input.md | - | disasm |
-| [~] | ship physics (thrust/rotate/gravity/drag) | physics.md | pending | pending |
-| [ ] | terrain collision & landing | | | |
+| [x] | ship physics, air subset (thrust, speed limit, rotate, gravity, drag, clamp) | physics.md | `recon/core/ship.c`, `x87.c` | 1021 / 1299 ticks (thrust / mixed) [C] |
+| [ ] | ship push decay (force kind 3) | physics.md | ported | no trace yet |
+| [ ] | terrain collision & landing (**next: RE-2**) | | | |
 | [ ] | weapons 0-34 | | | |
 | [ ] | explosions / terrain carving | | | |
 | [ ] | water CA | | | |
@@ -56,3 +58,10 @@ Ghidra + runtime labelling, ship update found inlined in `match_main`, `player_t
 recovered, physics constants and Options scaling, input path, RNG seeding, 157x90 viewport and
 50 Hz fixed step confirmed, trace harness built. Hurdles: in-match DJGPP stdio writes run away
 (worked around via guest RAM file); MSVC DOSBox-X lacks 80-bit FPU (use MinGW32 build).
+
+### 2026-09-24 — RE-1 done
+The old "1-player damage" blocker was the game loading other 400x400 levels. The harness now checks a level-pixel
+signature and keeps only LEGO.LEV in the work-copy LEV dir. Clean traces: noinput, thrust, rotate, mixed, dive.
+`recon/core/ship.c` + `x87.c` (portable C99, exact 64-bit-mantissa rounding without long double) match the original
+free-running for 1021 (thrust) and 1299 (mixed) consecutive ticks up to landing; all 13 v%200 drag ticks confirm
+x87 extended precision. Verified: `ship_speed`. decomp.dev report workflow added. Next: RE-2 terrain collision/landing.
