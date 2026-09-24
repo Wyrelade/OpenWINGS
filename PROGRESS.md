@@ -43,7 +43,7 @@ libc objects = 290 symbols. libgcc / libg++ 2.7.2.1 still unlabelled (archives u
 | [x] | input sampling | input.md | - | disasm |
 | [x] | ship physics, air subset (thrust, speed limit, rotate, gravity, drag, clamp) | physics.md | `recon/core/ship.c`, `x87.c` | 1021 / 1299 ticks (thrust / mixed) [C] |
 | [ ] | ship push decay (force kind 3) | physics.md | ported | no trace yet |
-| [ ] | terrain collision & landing (**next: RE-2**) | | | |
+| [~] | terrain collision & landing (**next: RE-2**) | terrain.md (first pass) | | 4 landing ticks hand-checked |
 | [ ] | weapons 0-34 | | | |
 | [ ] | explosions / terrain carving | | | |
 | [ ] | water CA | | | |

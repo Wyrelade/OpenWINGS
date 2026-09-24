@@ -412,7 +412,7 @@ Rule: a system is **done** only when its differential test passes (P2 harness).
 - [~] Trig tables: g_dir72 / g_dir360 values captured in every trace header; builder 0x340A8 not yet reimplemented
 - [x] Ship physics, air subset (thrust + speed limit, rotate, p5, gravity, drag, clamp, integrate): `recon/core/ship.c` matches the original for 1021 / 1299 consecutive ticks (thrust / mixed), exact x87 rounding proven on 13 v%200 ticks [C]
 - [ ] Ship push path (force kind 3 decay) — ported from disasm, no trace yet [H]
-- [ ] Terrain collision & landing
+- [~] Terrain collision & landing (RE-2): first-pass spec docs/systems/terrain.md; solid hit (halve, damage = ship_speed, axis re-test) matches 4 landing ticks [C]
 - [ ] Bases (repair, weapon switch, win condition)
 - [ ] Damage / ship strength / death / respawn
 - [ ] Weapons 0–34 (track individually)
@@ -589,6 +589,7 @@ landing traces (every current trace ends in a landing, so each already has a fir
 | 0x4BA8C / 0x4BAA8 | libm `cos` / `sin` | disasm [C] |
 | 0x5F104 | serial/SB I/O base port variable | disasm [H] |
 | 0x35B29 | ship block: gravity / push (force kind 3) decay | disasm [C] (gravity also trace [C]) |
+| 0x37D84 / 0x37D8C | collide: water drag double 0.952 / class-8 (snow) drag double 0.65 | disasm [C] |
 | 0x35C37 | ship block: air drag (`fld 0.995 / g_air_drag_f; fimul v; fistp`) | disasm + trace [C] |
 | 0x35CEE | ship block: forces / collide / damage calls, then bounds clamp `[2, W-3]` | disasm [C] |
 | 0x9974C / 0x99754 | level pitch / level pixel base pointer | disasm [C] (trace level signature) |
