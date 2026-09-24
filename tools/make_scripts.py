@@ -9,6 +9,8 @@ Scripts are designed offline with tools/ship_model.py so the ship stays inside t
   thrust   : only the thrust key (hover controller, nose stays up)
   rotate   : only the turn keys (spins while falling)
   mixed    : thrust + turn controller flying a circle, with coast and spin-only phases
+  dive     : turn nose-down, then full thrust: |v| passes max_speed (2000) before the ground, so
+             the ship_speed limit (thrust undo) is exercised
 
 usage: make_scripts.py <out_dir>
 """
@@ -74,6 +76,8 @@ def gen(kind, n, dir72):
             b = 0
         elif kind == 'rotate':
             b = R if (i // 40) % 2 == 0 else L
+        elif kind == 'dive':
+            b = R if p['angle10'] != 1800 else T
         elif kind == 'thrust':
             yt = CY + 20 * math.sin(i / 60)
             b = hover_keys(p, yt, False)
@@ -103,12 +107,13 @@ def main():
     t = json.load(open(os.path.join(os.path.dirname(__file__), '..', 're', 'traces',
                                     'lego_noinput_dosbox_mingw32.json')))
     dir72 = t['dir72']
-    for kind, n in (('noinput', 300), ('thrust', 900), ('rotate', 300), ('mixed', 1200)):
+    for kind, n in (('noinput', 300), ('thrust', 900), ('rotate', 300), ('mixed', 1200), ('dive', 200)):
         s = gen(kind, n, dir72)
         path = simulate(s, dir72)
         air = next((i for i, p in enumerate(path) if not inside(p)), len(path))
         open(os.path.join(out, f'{kind}.bin'), 'wb').write(bytes(s))
-        print(f'{kind}: {len(s)} bytes, model stays in box for {air} ticks, '
+        lim = sum(1 for p, q, b in zip(path, path[1:], s) if b & T and max(abs(p['vx']), abs(p['vy'])) > 2000)
+        print(f'{kind}: {len(s)} bytes, model stays in box for {air} ticks, limit checks {lim}, '
               f'thrust {sum(1 for b in s if b & T)}, turn {sum(1 for b in s if b & (L | R))}')
 
 
