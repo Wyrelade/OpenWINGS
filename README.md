@@ -1,8 +1,8 @@
 # OpenWINGS
 
 <!-- PROGRESS:BADGE -->
-![named](https://img.shields.io/badge/named-25%2F975%20(2.56%25)-1f6feb)
-![verified](https://img.shields.io/badge/verified-1%2F975%20(0.10%25)-2ea043)
+![named](https://img.shields.io/badge/named-40%2F975%20(4.10%25)-1f6feb)
+![verified](https://img.shields.io/badge/verified-8%2F975%20(0.82%25)-2ea043)
 <!-- /PROGRESS:BADGE -->
 ![platform](https://img.shields.io/badge/platform-DOS%20(DJGPP%20v2)-8957e5)
 ![license](https://img.shields.io/badge/license-MIT-blue)
@@ -33,17 +33,18 @@ separate track, an online drop-in multiplayer arena.
 
 ## Status
 
-Phase P1 (RE baseline) is largely done and the ground-truth harness works. Ship flight (RE-1) is
-reconstructed: `recon/core/ship.c` reproduces the original tick for tick in free flight (1021 and 1299
-consecutive ticks on the thrust and mixed traces), including the x87 extended-precision rounding, which
-is emulated in portable C99. Run the diff test with `python recon/tests/run_ship_diff.py`.
-The next milestone is RE-2: terrain collision and landing.
+Phase P1 (RE baseline) is largely done and the ground-truth harness works. Ship flight (RE-1) and
+terrain collision, landing and damage (RE-2) are reconstructed: `recon/core/ship.c` + `terrain.c` reproduce
+the original tick for tick on 13 traces over 4 levels — free flight, ground hits, resting, own/enemy/neutral/
+indestructible bases with repair, still water, waterfall currents, soft ground and snow — including the x87
+extended-precision rounding, which is emulated in portable C99. Run the diff test with
+`python recon/tests/run_ship_diff.py`. The next milestone is RE-3: forces, primary weapons and projectiles.
 
 <!-- PROGRESS:TABLE -->
 | Metric | Functions | Count | Progress |
 |---|---:|---:|---|
-| **Named** (symbol + evidence) | 975 | 25 | `▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱` 2.56% |
-| **Verified** (recon passes trace diff) | 975 | 1 | `▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱` 0.10% |
+| **Named** (symbol + evidence) | 975 | 40 | `▰▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱` 4.10% |
+| **Verified** (recon passes trace diff) | 975 | 8 | `▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱▱` 0.82% |
 <!-- /PROGRESS:TABLE -->
 
 Every finding is tagged **[C]** confirmed (disassembly plus trace), **[H]** hypothesis or **[?]**
@@ -94,8 +95,8 @@ re/ghidra/run_headless.sh <project_dir> wings -import re/work/WINGS.COFF ... \
 Capturing a trace (needs DOSBox-X MinGW32 build):
 
 ```
-python tools/make_trace_exe.py original/wings140/WINGS.EXE re/work/wings/WINGS.EXE
-re/harness/run_trace.sh <script.bin|-> re/traces/<name>.json 25 enter
+python tools/make_scripts.py re/harness/scripts        # scripts + captures.txt manifest
+re/harness/capture.sh lego_base 44 LEGO.LEV 42 40      # name seconds level teleport-x teleport-y
 ```
 
 ## Contributing

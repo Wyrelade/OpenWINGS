@@ -4,6 +4,7 @@ Source: `player_terrain_collide` 0x37D94..0x386D2 (called once per player per ti
 after `player_apply_forces` (only when `hp > 0`), before `player_apply_damage` 0x36F18, then the bounds clamp).
 Tags: [C] disasm (+ trace where noted), [H] hypothesis, [?] unknown.
 Reconstruction: `recon/core/terrain.c` (`player_terrain_collide`, `player_apply_damage`, `player_on_base`).
+**Status (RE-2, 2026-09-24): reconstructed and trace-verified** — see *Verification* at the end.
 
 ## Helpers [C disasm]
 | VA | name | behaviour |
@@ -101,7 +102,33 @@ if (d > 0) {
 ## RNG consumers on this path
 - `splash` 0xE83C: 2 × `random_n(36)` per particle, `speed/4` particles, only while the particle pool has room.
 - `player_die` 0x37A58: `random_n` at 0x37C2D, 0x37C41, 0x37C9E (respawn search [H]).
+- `player_apply_forces` 0x3691C: `random_n(20)` and `random_n(100)` for force kind 8 (0x36AC9) [C disasm].
 - The collide solid/base/water logic itself and `player_apply_damage` (without death) consume no RNG.
+
+## Verification (2026-09-24) [C]
+`python recon/tests/run_ship_diff.py` replays 13 traces free-running (ship.c + terrain.c, no resync) and compares
+x, y, sub-pixels, velocity, angle, p5, hp, flash timer/colour, damage_acc, on_own_base, on_any_base, material,
+repair counter, last_attacker, attacker_age and carried **every tick**. v4 traces also carry a CRC32 of the 17×17
+level pixels around the ship after each tick; the recon level (with its own edits) must produce the same CRC.
+
+| trace | level | ticks matched | exercises |
+|---|---|---|---|
+| lego_noinput / rotate / thrust / mixed / dive | LEGO | 1073 / 1069 / 1674 / 2078 / 620 (all) | ground hits, resting, rotation on the ground |
+| lego_base | LEGO | 1832 (all) | ground hit, hop onto own team base (40/41), repair 116 -> 120, lift-off, angle snap on landing |
+| lego_enemybase | LEGO | 1430 (all) | team-1 base: stopped, no flags, no repair |
+| lego_neutral | LEGO | 1372 (all) | neutral base 33–35 -> on_own_base |
+| lego_water | LEGO | 1620 (all) | still water: splash in/out, buoyancy, 0.952 drag, upside-down dive, ceiling hit |
+| forest_current | FOREST | 1582 (all) | waterfall 49, currents 50/51, underwater ground hits |
+| forest_soft | FOREST | 1432 (all) | soft ground: halved, never damaged |
+| arena_indbase | ARENA | 1480 (all) | indestructible base 38/39: on_any_base toggles, rotation between landings |
+| waste_snow | WASTE (community) | 467, then a weapon force from idle player 2 | snow (class 8): 0.65 drag, `1..24 -> 0`, splash, stop |
+
+x87: of 2374 water/snow drag ticks, 37 (all water, 0.952) give a different result with a 53-bit double product —
+the original's 64-bit-mantissa result is what the trace shows [C].
+
+Not reached by any trace yet: background fire (54) damage, base-pixel erase above a resting ship (step 8 tail),
+`player_on_base` water branch, `carried`/push attacker paths, death. These follow the disassembly but stay
+unverified.
 
 ## Trace evidence (ground = colour 136/139, class 1)
 | trace frame | v into collide | after halve | ship_speed = damage | hp | axis test result |

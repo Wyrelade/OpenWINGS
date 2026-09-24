@@ -8,7 +8,7 @@ A function counts as *named* once it has a symbol in `re/symbols.csv` with evide
 > run `python tools/update_readme_progress.py` to regenerate the README badge and table, and commit
 > both files together.
 
-**Game functions identified: 975 · named: 25 · verified: 1**  ·  updated 2026-09-24
+**Game functions identified: 975 · named: 40 · verified: 8**  ·  updated 2026-09-24
 
 Runtime (not counted above, labelled automatically by `tools/lib_match.py`): crt0 + libemu + 160 DJGPP
 libc objects = 290 symbols. libgcc / libg++ 2.7.2.1 still unlabelled (archives unavailable).
@@ -21,7 +21,7 @@ libc objects = 290 symbols. libgcc / libg++ 2.7.2.1 still unlabelled (archives u
 | [x] | Ghidra project | headless import at correct VAs, `re/ghidra/scripts/ApplySymbols.java`, `ExportAll.java` |
 | [x] | runtime labelled | exact masked-byte object matching, 290 names (`re/runtime_symbols.csv`) |
 | [x] | anchors named | timer, VGA, flip, RNG, key tables, player array |
-| [~] | main loop call tree | `match_main` 0x34B2C annotated; ~90 world-update callees unnamed |
+| [~] | main loop call tree | `match_main` 0x34B2C annotated; 180 direct callees, ~165 unnamed (weapon/effect update+draw pairs) |
 | [ ] | `.data` layout map | pools and array sizes |
 
 ## Phase P2 — Ground truth
@@ -32,7 +32,8 @@ libc objects = 290 symbols. libgcc / libg++ 2.7.2.1 still unlabelled (archives u
 | [x] | per-tick dump | patched copy -> RAM records -> DOSBox-X `memory file` -> JSON |
 | [x] | first trace | `re/traces/lego_noinput_dosbox_mingw32.json` |
 | [x] | input injection | SCRIPT.BIN -> key table; 5 scripted traces (noinput/thrust/rotate/mixed/dive) |
-| [x] | level identity check | level pixel rows in the trace header; only LEGO.LEV left in the work-copy LEV dir |
+| [x] | level identity check | level pixel rows in the trace header; only the traced level left in the work-copy LEV dir |
+| [x] | hook v4, any level | options + CRC of the level pixels around the ship per tick; `capture.sh <name> <secs> <LEVEL> <tx> <ty>` |
 | [ ] | RNG seed forcing | |
 
 ## Systems
@@ -43,10 +44,12 @@ libc objects = 290 symbols. libgcc / libg++ 2.7.2.1 still unlabelled (archives u
 | [x] | input sampling | input.md | - | disasm |
 | [x] | ship physics, air subset (thrust, speed limit, rotate, gravity, drag, clamp) | physics.md | `recon/core/ship.c`, `x87.c` | 1021 / 1299 ticks (thrust / mixed) [C] |
 | [ ] | ship push decay (force kind 3) | physics.md | ported | no trace yet |
-| [~] | terrain collision & landing (**next: RE-2**) | terrain.md (first pass) | | 4 landing ticks hand-checked |
+| [x] | terrain collision & landing, damage, repair | terrain.md | `recon/core/terrain.c` | 13 traces on 4 levels, every tick [C] |
+| [~] | bases: weapon switch, win condition | | | |
+| [ ] | forces (`player_apply_forces`) (**next: RE-3**) | physics.md step 9 | | |
 | [ ] | weapons 0-34 | | | |
 | [ ] | explosions / terrain carving | | | |
-| [ ] | water CA | | | |
+| [~] | water: ship in water / currents [C]; flow CA | terrain.md | terrain.c (ship only) | lego_water, forest_current |
 | [ ] | weather, civilians, troopers | | | |
 | [ ] | AI | | | |
 | [ ] | rules / modes | | | |
@@ -65,3 +68,12 @@ signature and keeps only LEGO.LEV in the work-copy LEV dir. Clean traces: noinpu
 `recon/core/ship.c` + `x87.c` (portable C99, exact 64-bit-mantissa rounding without long double) match the original
 free-running for 1021 (thrust) and 1299 (mixed) consecutive ticks up to landing; all 13 v%200 drag ticks confirm
 x87 extended precision. Verified: `ship_speed`. decomp.dev report workflow added. Next: RE-2 terrain collision/landing.
+
+### 2026-09-24 — RE-2 done
+`recon/core/terrain.c`: `player_terrain_collide` (all branches), `player_apply_damage`, `player_on_base`.
+`run_ship_diff.py` replays 13 traces on LEGO, FOREST, ARENA and WASTE free-running with zero mismatches on
+every tick: the 5 RE-1 traces to their end (resting on the ground), own/enemy/neutral/indestructible base
+landings incl. repair and the landing angle snap, still water, waterfall currents, soft ground and snow.
+Harness v4 (options + level-window CRC, any level, teleport per capture), `tools/recon_sim.py` for script design.
+Verified: player_terrain_collide, player_apply_damage, player_on_base, base_owner, water_current,
+level_get_pixel, material_class. Next: RE-3 forces + primary weapons (needs RNG seed forcing).

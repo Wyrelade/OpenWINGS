@@ -1,2 +1,9 @@
 va,name,test
 0x0000903C,ship_speed,recon/tests/run_ship_diff.py (dive: speed limit on 15 ticks; x87_check 3310 cases)
+0x00037D94,player_terrain_collide,"recon/tests/run_ship_diff.py: 13 traces (ground, own/enemy/neutral/indestructible base, still water, currents 49-51, soft, snow), every tick; untested: fire 54, base-pixel erase"
+0x00036F18,player_apply_damage,"recon/tests/run_ship_diff.py: hp/flash/attacker age on every tick of 13 traces; death branch only flagged (player_die not reconstructed)"
+0x00009388,player_on_base,"recon/tests/run_ship_diff.py: angle snap on landing (lego_base frame 564: 2400 -> 0); water branch (material 3) not reached"
+0x00039A00,base_owner,recon/tests/run_ship_diff.py: team 0/1 bases (lego_base/lego_enemybase) neutral 33-35 (lego_neutral) indestructible 38-39 (arena_indbase)
+0x00039A50,water_current,recon/tests/run_ship_diff.py: forest_current (48/49/50/51) + lego_water (48)
+0x00039FD8,level_get_pixel,recon/tests/run_ship_diff.py (all traces)
+0x0003987C,material_class,recon/tests/run_ship_diff.py: classes 0/1/2/3/5/6/8 reached; 4/7 same code path

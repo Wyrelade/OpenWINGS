@@ -457,8 +457,12 @@ Rule: a system is **done** only when its differential test passes (P2 harness).
 | **DJGPP stdio writes in-match run away** | Trace file grew >1 GB/s of zeros (root cause [?]) | No file writes from hooks; RAM records + DOSBox-X `memory file` |
 | libgcc/libg++ 2.7.2.1 archives unavailable | Part of 0x3A000–0x475A0 unlabelled | Other mirrors / rebuild from gcc 2.7.2.1 source |
 | Scope creep toward MP before reconstruction is verified | Loss of authenticity | Hard gate: MP work uses only [C]-marked systems |
+| **Level pixels change during a match** (water flow CA, waves, explosions, base-pixel erase) | Static-level recon diverges silently | Hook v4 CRC of the 17×17 window around the ship each tick; RE-2 traces run with Flowing water and Waves **off** (0x9AB69/0x9AB64) — the flow CA itself is still unverified |
+| **Idle player 2 hits player 1** (weapon force, `last_attacker` set by `player_apply_forces` 0x36AAE) | Trace can only be checked up to that tick (waste_snow ends at frame 469) | ship_diff stops with "external force"; keep P2 far away or reconstruct forces/weapons (RE-3) |
+| Window check near level edges | Hook reads raw memory outside the pixel array (ship within 8 px of the top/bottom) → tick not checkable (arena_indbase: 324/1480 checked) | Accept; or clamp the window in a future hook |
+| Level fragments in committed traces | Game-asset leak | Only CRC32 of the window is stored; header signature rows are reduced to `level_match` |
 
-Unknowns list: viewport size per player count; exact spawn logic; AI; pickups existence; sample rate; serial protocol; `.SHP`/`WEAPONS.DAT` semantics; how deathmatch respawn location is chosen; whether any global uses delta-time.
+Unknowns list: viewport size per player count; exact spawn logic (spawns look random, not at bases: P2 spawns in mid-air in every trace [H]); AI; pickups existence; sample rate; serial protocol; `.SHP`/`WEAPONS.DAT` semantics; how deathmatch respawn location is chosen; whether any global uses delta-time; `u_108` (shield?), `u_120` (grabber?), `u_c8`; class-8 colours 6/17–20 meaning; mask 0x9B410 written by `level_set_pixel` when 0x9AB9B == 1.
 
 ---
 
@@ -544,6 +548,47 @@ v%200==0 all match 64-bit-mantissa rounding and would all fail with 53-bit doubl
 next position, material classes from `material_class` 0x3987C), bases (landing, repair, weapon cycling), water; capture
 landing traces (every current trace ends in a landing, so each already has a first collision tick to diff).
 
+### RE-2 result (2026-09-24) — **done**
+`recon/core/terrain.c` reconstructs `player_terrain_collide` 0x37D94 (all branches incl. tail 0x384E9–0x386D2),
+`player_apply_damage` 0x36F18 (hp, flash, attacker age; death only flagged) and `player_on_base` 0x9388, wired
+between `ship_step_pre` and `ship_step_post`. `python recon/tests/run_ship_diff.py` replays **13 traces on 4 levels
+free-running, every tick, zero mismatches**: the 5 RE-1 traces now run to their end (ship resting / bouncing on the
+ground, 620–2078 ticks), plus lego_base (ground hit, hop to own base, repair 116→120, lift-off, landing angle
+snap), lego_enemybase, lego_neutral, lego_water, forest_current (waterfall 49, currents 50/51), forest_soft,
+arena_indbase (38/39) and waste_snow (class 8, until a weapon force from idle player 2 at frame 469). Compared
+fields: x, y, sub-pixels, v, angle, p5, hp, flash timer/colour, damage_acc, on_own_base, on_any_base, material,
+repair counter, last_attacker, attacker_age, carried; plus a CRC of the level pixels around the ship.
+37 water-drag ticks prove x87 64-bit-mantissa rounding for 0.952 as well.
+
+### RE-2 session notes (2026-09-24)
+- **[C] tail of collide**: `material` (+0xAC) = `material_class(probe)` after all velocity changes — its only
+  writer (0x38570); then a "resting on base" check of the pixel **below** the current position (class 2 only:
+  `player_on_base`, own/any flags) which also erases a base pixel directly **above** the ship
+  (`level_set_pixel(x, y-1, 0)`); then repair every 10th tick on an own base.
+  ~~[?] material stays 0 on landing ticks so its meaning is unknown~~ — it is the class of the *next* pixel after
+  the bounce (air again), confirmed on every tick of every trace.
+- ~~"if d > 1: sound and damage_acc += d"~~ — wrong: the sound needs `d > 1`, `damage_acc += d` always (d = 0/1
+  when resting). Soft ground (class 6) never damages. [C disasm + trace]
+- After the water branch the class is **re-evaluated** with the new velocity and the later branches use it [C].
+- `on_any_base` means "indestructible base (38/39)": blocks rotation, no repair; the flag flickers while resting
+  because it is only set on ticks whose probe hits the base [C trace, arena_indbase].
+- `player_apply_forces` runs only when `hp > 0`; a foreign force sets `last_attacker = source`,
+  `attacker_age = 0` (0x36AAE), which the diff uses to detect the end of the checkable window [C].
+- Harness v4: header also carries options (Waves 0x9AB64, Flowing water 0x9AB69, ship strength, g_repair);
+  records carry a CRC32 of 17×17 level pixels; `capture.sh` takes the level and teleport target and runs
+  `prepare_level.py`; scripts are designed with `tools/recon_sim.py` (recon/core incl. collision).
+- Task 5: 8 more functions named from match_main's callees (pause/result screens, pcx_write, palette, pixel access,
+  stars); callees fall into per-weapon/effect update+draw pairs (draws call put_pixel 0x105A8 or blit 0xB114).
+- Spawns are not at bases: player 2 spawns in mid-air at a random spot and falls (all traces) [H: random spawn].
+
+**Next task: RE-3 — forces, primary weapons and projectiles.** Rationale (§8 P4→P5): `player_apply_forces`
+0x3691C is the last unreconstructed step of the ship tick and already ends traces (waste_snow); weapons are the
+next core system and consume RNG, so they need **RNG seed forcing** (§9.3) first. Steps: (1) seed forcing in the
+hook (set `random()` state at match start) and record the RNG state per tick; (2) spec + recon of
+`player_apply_forces` and the force list 0x76A20 (kinds 1/3/8), (3) primary fire path (`player_fire` 0x233F8,
+Autofire rule [?]) and the bullet pool update/draw pair, bullet–terrain and bullet–ship hits; (4) traces with
+player 2 firing at player 1 from a scripted position; diff ship + projectile pool + RNG state.
+
 ---
 
 ## Appendix A — Key addresses discovered so far
@@ -577,7 +622,22 @@ landing traces (every current trace ends in a landing, so each already has a fir
 | 0x1AF34 | `seed_rng` = srandom(time(0)) | disasm [C] |
 | 0x34B2C | `match_main` (frame loop + inlined ship update) | disasm [C] |
 | 0x3691C / 0x36F18 / 0x37D94 | player_apply_forces / apply_damage / terrain_collide | disasm [C] |
-| 0x3987C / 0x39FD8 | material_class / level_get_pixel | disasm [C] |
+| 0x3987C / 0x39FD8 | material_class / level_get_pixel | disasm + trace [C] (RE-2) |
+| 0x09388 | `player_on_base` (angle snap 0 / 180, water branch) | disasm + trace [C] |
+| 0x0E83C | `splash(x, y, speed)`: sound + speed/4 particles, 2×random_n(36) each, pool 0x59AA0 (40 × 40 B), count 0x59F00 | disasm [C] |
+| 0x1FC80 | `sound_play(sample, prio, 0, vol)` | disasm [H] |
+| 0x37A58 | `player_die(x, y, idx)` (uses random_n) | disasm [H] |
+| 0x37D84 / 0x37D8C | doubles 0.952 (water drag) / 0.65 (class-8 drag) | disasm + trace [C] |
+| 0x386D4 | `attacker_lookup(idx)` over grab/net pools 0x994A0 / 0x99638 | disasm [H] |
+| 0x39A00 / 0x39A50 | `base_owner(c)` / `water_current(c)` | disasm + trace [C] |
+| 0x3A01C | `level_set_pixel(x, y, c)` (+ mask 0x9B410 when 0x9AB9B == 1) | disasm [C] |
+| 0x36AAE | player_apply_forces: foreign force sets last_attacker / attacker_age = 0 | disasm + trace [C] |
+| 0x9AB64 / 0x9AB69 / 0x9AB6C | Options Waves / Flowing water / Flowing speed (OPTIONS.DAT bytes 16 / 19 / 20..23) | save routine 0x17593 [C] |
+| 0x9AC10 | deathmatch flag | disasm [H] |
+| 0x9EAE8 | `g_repair` = max(1, opt_ship_strength_pct/100) (hp per 10 ticks on own base) | disasm + trace [C] |
+| 0x105A8 / 0x105FC / 0x10660 | put_pixel / get_pixel (back buffer 0x5E3C8) / set_palette | disasm [C] |
+| 0x1B694 | `pcx_write` (F12 screenshot) | disasm [C] |
+| 0x371DC / 0x37370 | pause_screen / match_result_screen | strings [C] |
 | 0x475A0 | start of DJGPP libc (crt1.o) | lib match [C] |
 | 0x491F4 / 0x491FC | sqrt / floor | disasm [C] |
 | 0x4B188 | libc `rand` (not used by random_n) | lib match [C] |

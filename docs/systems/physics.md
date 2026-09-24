@@ -13,7 +13,8 @@ Tags: [C] confirmed by disassembly (and trace where noted), [H] hypothesis, [?] 
   Second table `g_dir360` (360 entries, start 270, `rad = deg*0.017453`) used by weapons/forces.
 
 Reconstruction: `recon/core/ship.c` (`ship_step_pre` = steps 1-8, `ship_step_post` = 12-13),
-`recon/core/x87.c` (exact x87 arithmetic), diff test `recon/tests/run_ship_diff.py`.
+`recon/core/terrain.c` (steps 10-11), `recon/core/x87.c` (exact x87 arithmetic), diff test
+`recon/tests/run_ship_diff.py` (since RE-2: every tick of 13 traces incl. landings, see terrain.md).
 
 ## Per-tick order for one player (alive, not carried)
 1. `player_apply_confusion` (control scramble status) [C].
@@ -33,10 +34,12 @@ Reconstruction: `recon/core/ship.c` (`ship_step_pre` = steps 1-8, `ship_step_pos
 8. Air drag [C]: `opt_air_res_pct == 100` -> `c = 0.995` (double const 0x34B1C);
    `== 0` -> none; else `c = (float)(1 - pct*0.005/100)` (0x9AB78).
    `vx = trunc(c*vx); vy = trunc(c*vy)`.
-9. `player_apply_forces` (explosion/force list 0x76A20; `v += trunc(f*dir/mass)`).
+9. `player_apply_forces` (only when `hp > 0`; explosion/force list 0x76A20; `v += trunc(f*dir/mass)`,
+   `damage_acc += f.damage`; a force from another player sets `last_attacker = source, attacker_age = 0`
+   (0x36AAE)) [C disasm]. Not reconstructed yet.
 10. `player_terrain_collide` — **single pixel** test at the next position (material classes, water,
-    base landing, soft/solid bounce); RE-2.
-11. `player_apply_damage`.
+    base landing, soft/solid bounce): docs/systems/terrain.md, `recon/core/terrain.c` [C, trace].
+11. `player_apply_damage`: docs/systems/terrain.md, `recon/core/terrain.c` [C, trace].
 12. Clamp (0x35CEE) [C disasm]: for x then y, if `pos + (sub + v)/1000 < 2` -> `pos = 2, v = 0, carried = 0`;
     then if `> W-3` (resp. `H-3`) -> `pos = W-3, v = 0, carried = 0`. Sub-pixel is kept.
 13. Integrate: `xsub += vx; x += xsub/1000; xsub %= 1000` (C truncating division, so sub-pixel may be negative) [C, trace].
@@ -64,8 +67,9 @@ Reconstruction: `recon/core/ship.c` (`ship_step_pre` = steps 1-8, `ship_step_pos
 - Thrust: `trunc(thrust_f32 * dir)` is exact in a double (24-bit x 11-bit), so a plain C cast is exact.
 
 ## Verification (2026-09-24) [C]
-`python recon/tests/run_ship_diff.py`: recon free-runs from the first record with the recorded key flags,
-no resync, and stops at the first tick whose collision pixel is not air.
+RE-1 (air only): `python recon/tests/run_ship_diff.py` free-ran from the first record with the recorded key
+flags, no resync, and stopped at the first tick whose collision pixel is not air. Since RE-2 the same traces run
+to their end, ground contact included (all ticks match) — see docs/systems/terrain.md.
 
 | trace | consecutive matching ticks | stop |
 |---|---|---|
